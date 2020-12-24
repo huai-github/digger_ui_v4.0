@@ -1,4 +1,6 @@
 import sys
+from time import sleep
+
 import UI
 import cv2
 import matplotlib.pyplot as plt
@@ -13,7 +15,7 @@ import globalvar as gl
 # h = 480  	# 画布大小
 # w = 550
 
-h = 560  	# 画布大小
+h = 560  # 画布大小
 w = 620
 
 g_startX = 0
@@ -106,17 +108,17 @@ class MyWindows(QWidget, UI.Ui_Form):
 		endPoint = (endX, endY)
 		width = Interval * 3
 		currentPoint = (nowX, nowY)
-		corner = work_area(img, startPoint, endPoint, width, currentPoint)	 # 返回矩形的角点坐标，从右上角开始逆时针选择
+		corner = work_area(img, startPoint, endPoint, width, currentPoint)  # 返回矩形的角点坐标，从右上角开始逆时针选择
 		# print("corner:", corner)
-		border1 = corner[0][0][0]  	# 右上角的x坐标
+		border1 = corner[0][0][0]   # 右上角的x坐标
 		border2 = corner[1][0][0]
-		area1 = corner[0][0][1]	 	# 右上角的y坐标
+		area1 = corner[0][0][1]     # 右上角的y坐标
 		area2 = corner[2][0][1]
 		ptx = corner[4][0][0]
 		pty = corner[4][0][1]
 
-		BorderReminderLedXY = (w-25, h-18)  # 边界指示灯位置 界内绿色
-		BorderReminderTextXY = (w-320, h-10)
+		BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯位置 界内绿色
+		BorderReminderTextXY = (w - 320, h - 10)
 		cv2.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
 		self.BorderReminder.setText("   ")
 
@@ -127,14 +129,19 @@ class MyWindows(QWidget, UI.Ui_Form):
 			self.BorderReminder.setText("！！即将超出边界！！")
 		# 如果超出工作区域
 		if (pty < area1) or (pty > area2):
-			thread.g_work_area += 1
+			area_inc_flag = True
+			gl.set_value("area_inc_flag", area_inc_flag)
+			
+			work_area_num = gl.get_value("work_area_num")
+			work_area_num += 1
+			gl.set_value("work_area_num", work_area_num)
 
 		cv2.putText(img, "BorderReminder", BorderReminderTextXY, cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
 		QtImgLine = QImage(cv2.cvtColor(img, cv2.COLOR_BGR2RGB).data,
-						   img.shape[1],
-						   img.shape[0],
-						   img.shape[1] * 3,  # 每行的字节数, 彩图*3
-						   QImage.Format_RGB888)
+		                   img.shape[1],
+		                   img.shape[0],
+		                   img.shape[1] * 3,  # 每行的字节数, 彩图*3
+		                   QImage.Format_RGB888)
 
 		pixmapL = QPixmap(QtImgLine)
 		self.leftLabel.setPixmap(pixmapL)
@@ -170,10 +177,10 @@ class MyWindows(QWidget, UI.Ui_Form):
 		img = np.array(self.canvas.renderer.buffer_rgba())
 
 		QtImgBar = QImage(img.data,
-						  img.shape[1],
-						  img.shape[0],
-						  img.shape[1] * 4,
-						  QImage.Format_RGBA8888)
+		                  img.shape[1],
+		                  img.shape[0],
+		                  img.shape[1] * 4,
+		                  QImage.Format_RGBA8888)
 		pixmapR = QPixmap(QtImgBar)
 
 		self.rightLabel.setPixmap(pixmapR)
@@ -207,10 +214,11 @@ if __name__ == "__main__":
 	# sleep(1)
 
 	while True:
-		if thread.g_reced_flag:
-			# print("111", thread.g_reced_flag)
+		reced_flag = gl.get_value("reced_flag")
+		if reced_flag:
+			reced_flag = False
+			gl.set_value("reced_flag", reced_flag)
 			mainWindow = MyWindows()
 			get_global_value()
 			mainWindow.show()
-
 			sys.exit(app.exec_())
