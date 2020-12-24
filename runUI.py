@@ -1,19 +1,21 @@
 import sys
 from time import sleep
-
 import UI
 import cv2
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5 import QtCore
 from my_thread import MyThread
-from thread import *
+import multi_thread
+import threading
 import globalvar as gl
 
 # h = 480  	# 画布大小
 # w = 550
+from tools import work_area
 
 h = 560  # 画布大小
 w = 620
@@ -61,9 +63,9 @@ class UIFreshThread(object):  # 界面刷新线程
 			self.endY = g_endY
 			self.Interval = g_startW
 
-		self.nowX = thread.g_x - 4076000  # from gps
-		self.nowY = thread.g_y - 515000
-		self.deep = thread.g_h  # - 基准高 baseHeight from could
+		self.nowX = multi_thread.g_x - 4076000  # from gps
+		self.nowY = multi_thread.g_y - 515000
+		self.deep = multi_thread.g_h  # - 基准高 baseHeight from could
 		sleep(1)
 
 	def get_msg_xy(self):
@@ -131,7 +133,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 		if (pty < area1) or (pty > area2):
 			area_inc_flag = True
 			gl.set_value("area_inc_flag", area_inc_flag)
-			
+
 			work_area_num = gl.get_value("work_area_num")
 			work_area_num += 1
 			gl.set_value("work_area_num", work_area_num)
@@ -206,8 +208,8 @@ if __name__ == "__main__":
 	gl._init()
 	app = QApplication(sys.argv)
 
-	gps_thread = threading.Thread(target=thread.thread_gps_func, daemon=True)
-	_4g_thread = threading.Thread(target=thread.thread_4g_func, daemon=True)
+	gps_thread = threading.Thread(target=multi_thread.thread_gps_func, daemon=True)
+	_4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=True)
 
 	gps_thread.start()  # 启动线程
 	_4g_thread.start()

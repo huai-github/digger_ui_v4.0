@@ -1,6 +1,5 @@
 from tools import *
 import math
-import thread
 
 
 def LatLon2XY(latitude, longitude):
@@ -89,11 +88,11 @@ class GPSINSData(object):
 		gps_switch_alt = TypeSwitchUnion()
 		# 字符串拼接
 		latitude = self.latitude[0] + self.latitude[1] + self.latitude[2] + self.latitude[3] + self.latitude[4] + \
-				   self.latitude[5] + self.latitude[6] + self.latitude[7]
+		           self.latitude[5] + self.latitude[6] + self.latitude[7]
 		longitude = self.longitude[0] + self.longitude[1] + self.longitude[2] + self.longitude[3] + self.longitude[4] + \
-					self.longitude[5] + self.longitude[6] + self.longitude[7]
+		            self.longitude[5] + self.longitude[6] + self.longitude[7]
 		altitude = self.altitude[0] + self.altitude[1] + self.altitude[2] + self.altitude[3] + self.altitude[4] + \
-				   self.altitude[5] + self.altitude[6] + self.altitude[7]
+		           self.altitude[5] + self.altitude[6] + self.altitude[7]
 
 		gps_switch_lat.char_8 = latitude
 		gps_switch_lon.char_8 = longitude
