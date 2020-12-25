@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-def _init():
+def gl_init():
     global _global_dict
     _global_dict = {}
 

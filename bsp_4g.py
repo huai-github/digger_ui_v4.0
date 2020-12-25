@@ -9,6 +9,39 @@ def task_switch_dict(rec_buf):
 	return rec_buf_dict
 
 
+def get_xyhw(rec_buf_dict):
+	"""将所有的x存在都x列表中"""
+	startx = []
+	starty = []
+	endx = []
+	endy = []
+	starth = []
+	startw = []
+	endh = []
+	endw = []
+	xy_list = rec_buf_dict["list"]
+	for xy_dict in xy_list:
+		for k, v in xy_dict.items():
+			if k == "startX":
+				startx.append(v)
+			if k == "startY":
+				starty.append(v)
+			if k == "startH":
+				starth.append(v)
+			if k == "startW":
+				startw.append(v)
+			if k == "endX":
+				endx.append(v)
+			if k == "endY":
+				endy.append(v)
+			if k == "endH":
+				endh.append(v)
+			if k == "endW":
+				endw.append(v)
+
+	return startx, starty, starth, startw, endx, endy, endh, endw
+
+
 class Heart(object):
 	def __init__(self, messageTypeId, diggerId):
 		self.heart_dict = {
@@ -17,9 +50,13 @@ class Heart(object):
 		}
 
 	def send_heart_msg(self, com):
+
+		print("self.heart_dict", self.heart_dict)
 		send_buf_json = json.dumps(self.heart_dict)
 		com.send_data(send_buf_json.encode('utf-8'))
-		print("heart send succ\n")
+		print("send_buf_json", send_buf_json)
+		# print("heart send succ\n")
+
 	def rec_ack(self):
 		pass
 

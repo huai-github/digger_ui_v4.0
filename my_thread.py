@@ -25,7 +25,6 @@ class MyThread(threading.Thread):
 			self.result = False
 			with self.state:
 				if self.paused:
-					print()
 					print("{} paused ...".format(self.name))
 					self.state.wait()  # Block execution until notified.
 

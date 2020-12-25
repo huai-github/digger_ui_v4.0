@@ -1,7 +1,4 @@
 from math import acos, sqrt, cos
-
-# 已知：laser_cd, laser_de, laser_fi,
-# 通过激光传感器测得的距离计算角度
 from bsp_gps import GPSINSData
 from gyro import Gyro
 from laser import Laser
@@ -17,10 +14,6 @@ def laser_dist_to_angle(adjacent_1, adjacent_2, laser_dist):
 	:return: 角度angle
 	"""
 	return acos(((adjacent_1 ** 2) + (adjacent_2 ** 2) - (laser_dist ** 2)) / (2 * adjacent_1 * adjacent_2))
-
-# cos(angle_cab) = (((l_ac) ** 2) + ((l_ab) ** 2) - ((l_bc) ** 2)) / (2 * l_ac * l_ab)
-# cos(angle_dge) = (((l_dg) ** 2) + ((l_eg) ** 2) - ((l_de) ** 2)) / (2 * l_dg * l_eg)
-# cos(angle_fhi) = (((l_fh) ** 2) + ((l_hi) ** 2) - ((l_fi) ** 2)) / (2 * l_fh * l_hi)
 
 
 def altitude_calculate_func():

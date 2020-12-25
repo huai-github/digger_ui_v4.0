@@ -1,21 +1,20 @@
 import sys
-from time import sleep
 import UI
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5 import QtCore
-from my_thread import MyThread
+from time import sleep
+
 import multi_thread
-import threading
+from my_thread import MyThread
+from multi_thread import *
 import globalvar as gl
 
 # h = 480  	# 画布大小
 # w = 550
-from tools import work_area
 
 h = 560  # 画布大小
 w = 620
@@ -40,45 +39,22 @@ def get_global_value():
 	g_endY = gl.get_value('g_endY')
 	g_endH = gl.get_value('g_endH')
 	g_endW = gl.get_value('g_endW')
-	print("g_startX:", g_startX)
+	print("g_startW", g_startW)
 
 
 class UIFreshThread(object):  # 界面刷新线程
 	def __init__(self):
-		self.startX = 0  # from could
-		self.startY = 0
-		self.endX = 0
-		self.endY = 0
-		self.Interval = 0
-
 		self.nowX = 0  # from gps
 		self.nowY = 0
 		self.deep = 0
 
 	def __call__(self):  # 调用实例本身 ——>> MyThread(self.__thread,....
-		if g_startX != 0:
-			self.startX = g_startX  # from could
-			self.startY = g_startY
-			self.endX = g_endX
-			self.endY = g_endY
-			self.Interval = g_startW
-
 		self.nowX = multi_thread.g_x - 4076000  # from gps
 		self.nowY = multi_thread.g_y - 515000
 		self.deep = multi_thread.g_h  # - 基准高 baseHeight from could
-		sleep(1)
-
-	def get_msg_xy(self):
-		return self.startX, self.startY, self.endX, self.endY, self.Interval, self.nowX, self.nowY
 
 	def get_msg_deep(self):
 		return self.deep
-
-	def get_msg_startXY(self):
-		return self.startX, self.startY
-
-	def get_msg_endXY(self):
-		return self.endX, self.endY
 
 	def get_msg_nowXY(self):
 		return self.nowX, self.nowY
@@ -91,7 +67,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 		self.setupUi(self)
 		self.imgLine = np.zeros((h, w, 3), np.uint8)  # 画布
 		self.imgBar = np.zeros((h, w, 3), np.uint8)
-		self.figure = plt.figure()  # 可选参数,face color为背景颜色
+		self.figure = plt.figure()  # 可选参数,facecolor为背景颜色
 		self.canvas = FigureCanvas(self.figure)
 		self.__timer = QtCore.QTimer()  # 定时器用于定时刷新
 		self.set_slot()
@@ -104,39 +80,50 @@ class MyWindows(QWidget, UI.Ui_Form):
 	def set_slot(self):
 		self.__timer.timeout.connect(self.update)
 
-	def leftWindow(self, img, startX, startY, endX, endY, Interval, nowX, nowY):
-		img[...] = 255
-		startPoint = (startX, startY)
-		endPoint = (endX, endY)
-		width = Interval * 3
+	def leftWindow(self, img, sx_list, sy_list, ex_list, ey_list, width, nowX, nowY):
+		img[...] = 255  # 画布
+		interval = width  # 宽度
 		currentPoint = (nowX, nowY)
-		corner = work_area(img, startPoint, endPoint, width, currentPoint)  # 返回矩形的角点坐标，从右上角开始逆时针选择
-		# print("corner:", corner)
-		border1 = corner[0][0][0]   # 右上角的x坐标
-		border2 = corner[1][0][0]
-		area1 = corner[0][0][1]     # 右上角的y坐标
-		area2 = corner[2][0][1]
-		ptx = corner[4][0][0]
-		pty = corner[4][0][1]
+
+		x_min = min(sx_list)
+		y_min = min(sy_list)
+
+		for i in range(len(sx_list)):
+			sx = sx_list[i] - x_min + 50
+			sy = sy_list[i] - y_min + 50
+			ex = ex_list[i] - x_min + 50
+			ey = ey_list[i] - y_min + 50
+			start_point = (int(sx), int(sy))  # 画中线
+			end_point = (int(ex), int(ey))
+			cv.line(img, start_point, end_point, (0, 255, 0), 2)
+
+			k = (ey - sy) / (ex - sx)
+			theta = np.arctan(k)
+			x_offset = interval * sin(theta) * -1
+			y_offset = interval * cos(theta)
+			M = np.float32([[1, 0, x_offset],
+			                [0, 1, y_offset]])
+			new_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
+
+			x1_offset = interval * sin(theta)
+			y1_offset = interval * cos(theta) * -1
+			M1 = np.float32([[1, 0, x1_offset],
+			                 [0, 1, y1_offset]])
+			new_pt1 = cv.transform(np.float32([[start_point], [end_point]]), M1).astype(np.int)
+
+			box = np.array([tuple(new_pt1[0][0]), tuple(new_pt[0][0]), tuple(new_pt[1][0]), tuple(new_pt1[1][0])])
+			cv.drawContours(img, [box[:, np.newaxis, :]], 0, (0, 0, 255), 2)
+
+			cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
+			dist = cv.pointPolygonTest(box, currentPoint, False)
+			print("dist", dist)
 
 		BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯位置 界内绿色
 		BorderReminderTextXY = (w - 320, h - 10)
 		cv2.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
 		self.BorderReminder.setText("   ")
 
-		"""边界和区域判断"""
-		# 如果超出边界，BorderReminder红色,并提示汉字信息
-		if (ptx < border2) or (ptx > border1):
-			cv2.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
-			self.BorderReminder.setText("！！即将超出边界！！")
-		# 如果超出工作区域
-		if (pty < area1) or (pty > area2):
-			area_inc_flag = True
-			gl.set_value("area_inc_flag", area_inc_flag)
-
-			work_area_num = gl.get_value("work_area_num")
-			work_area_num += 1
-			gl.set_value("work_area_num", work_area_num)
+		# TODO：如果超出边界，BorderReminder红色,并提示汉字信息
 
 		cv2.putText(img, "BorderReminder", BorderReminderTextXY, cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
 		QtImgLine = QImage(cv2.cvtColor(img, cv2.COLOR_BGR2RGB).data,
@@ -187,33 +174,44 @@ class MyWindows(QWidget, UI.Ui_Form):
 
 		self.rightLabel.setPixmap(pixmapR)
 
-	def showStartXY(self, startX, startY):
-		self.startXY.setText("(%.2f, %.2f)" % (startX, startY))
-
-	def showEndXY(self, endX, endY):
-		self.endXY.setText("(%.2f, %.2f)" % (endX, endY))
-
 	def showNowXY(self, nowX, nowY):
 		self.nowXY.setText("(%.2f, %.2f)" % (nowX, nowY))
 
 	def update(self):
 		self.rightWindow(self.imgBar, self.__thread.get_msg_deep())
-		self.leftWindow(self.imgLine, *self.__thread.get_msg_xy())
-		self.showStartXY(*self.__thread.get_msg_startXY())
-		self.showEndXY(*self.__thread.get_msg_endXY())
-		self.showNowXY(*self.__thread.get_msg_nowXY())
+		g_start_x_list = gl.get_value('g_start_x_list')  # [122.22, 32.33]
+		g_start_y_list = gl.get_value('g_start_y_list')
+		g_start_h_list = gl.get_value('g_start_h_list')
+		g_start_w_list = gl.get_value('g_start_w_list')
+		g_end_x_list = gl.get_value('g_end_x_list')
+		g_end_y_list = gl.get_value('g_end_y_list')
+		g_end_h_list = gl.get_value('g_end_h_list')
+		g_end_w_list = gl.get_value('g_end_w_list')
+		# print('g_end_w_list:', g_end_w_list)
+		# TODO: 宽度怎么办？？
+
+		current_x, current_y = self.__thread.get_msg_nowXY()
+		self.leftWindow(self.imgLine, g_start_x_list, g_start_y_list, g_end_x_list, g_end_y_list, g_start_w_list[0],
+		                int(current_x),
+		                int(current_y))
+		# TODO：如果绘制全部的直线段，显示起点坐标和终点坐标是没有意义
+		self.showNowXY(current_x, current_y)
 
 
 if __name__ == "__main__":
-	gl._init()
+	gl.gl_init()
 	app = QApplication(sys.argv)
 
 	gps_thread = threading.Thread(target=multi_thread.thread_gps_func, daemon=True)
 	_4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=True)
+	# gyro_thread = threading.Thread(target=multi_thread.thread_gyro_func, daemon=True)
+	# calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=True)
 
 	gps_thread.start()  # 启动线程
+	mainWindow = MyWindows()
 	_4g_thread.start()
-	# sleep(1)
+	# gyro_thread.start()
+	# calculate_thread.start()
 
 	while True:
 		reced_flag = gl.get_value("reced_flag")
@@ -222,5 +220,6 @@ if __name__ == "__main__":
 			gl.set_value("reced_flag", reced_flag)
 			mainWindow = MyWindows()
 			get_global_value()
+			sleep(1)
 			mainWindow.show()
 			sys.exit(app.exec_())
