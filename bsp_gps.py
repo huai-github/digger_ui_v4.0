@@ -67,12 +67,8 @@ class GPSINSData(object):
 			self.xor_check = self.xor_check.to_bytes(length=2, byteorder='little', signed=False)
 
 			if self.xor_check == self.checksum:  # 数据包异或校验通过
-				if rec_buf[104] == b'\x04':  # gps信号稳定
-					# print("The signal of gps is stable！\r\n")
-					pass
-				else:
+				if rec_buf[104] != 0x04:  # gps信号不稳定
 					print("The signal of gps is unstable！\r\n")
-					pass
 			else:
 				print("checksum error!!!\r\n")
 				pass
@@ -88,11 +84,11 @@ class GPSINSData(object):
 		gps_switch_alt = TypeSwitchUnion()
 		# 字符串拼接
 		latitude = self.latitude[0] + self.latitude[1] + self.latitude[2] + self.latitude[3] + self.latitude[4] + \
-		           self.latitude[5] + self.latitude[6] + self.latitude[7]
+		        self.latitude[5] + self.latitude[6] + self.latitude[7]
 		longitude = self.longitude[0] + self.longitude[1] + self.longitude[2] + self.longitude[3] + self.longitude[4] + \
-		            self.longitude[5] + self.longitude[6] + self.longitude[7]
+		        self.longitude[5] + self.longitude[6] + self.longitude[7]
 		altitude = self.altitude[0] + self.altitude[1] + self.altitude[2] + self.altitude[3] + self.altitude[4] + \
-		           self.altitude[5] + self.altitude[6] + self.altitude[7]
+		        self.altitude[5] + self.altitude[6] + self.altitude[7]
 
 		gps_switch_lat.char_8 = latitude
 		gps_switch_lon.char_8 = longitude

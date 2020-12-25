@@ -205,6 +205,9 @@ if __name__ == "__main__":
 	gps_thread = threading.Thread(target=multi_thread.thread_gps_func, daemon=True)
 	_4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=True)
 	# gyro_thread = threading.Thread(target=multi_thread.thread_gyro_func, daemon=True)
+	# g_laser1_thread = threading.Thread(target=multi_thread.thread_laser1_func, daemon=True)
+	# g_laser2_thread = threading.Thread(target=multi_thread.thread_laser2_func, daemon=True)
+	# g_laser3_thread = threading.Thread(target=multi_thread.thread_laser3_func, daemon=True)
 	# calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=True)
 
 	gps_thread.start()  # 启动线程
@@ -220,6 +223,6 @@ if __name__ == "__main__":
 			gl.set_value("reced_flag", reced_flag)
 			mainWindow = MyWindows()
 			get_global_value()
-			sleep(1)
+			# sleep(1)
 			mainWindow.show()
 			sys.exit(app.exec_())
