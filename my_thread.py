@@ -21,7 +21,8 @@ class MyThread(threading.Thread):
 
 		self.resume()
 		while True:
-			print("{} running ...\r".format(self.name), end="")
+			# print("{} running ...\r\n".format(self.name), end="")
+			sleep(0.01)
 			self.result = False
 			with self.state:
 				if self.paused:

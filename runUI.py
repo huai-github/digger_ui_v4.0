@@ -28,6 +28,9 @@ g_endY = 0
 g_endH = 0
 g_endW = 0
 
+x_min = 0
+y_min = 0
+
 
 def get_global_value():
 	global g_startX, g_startY, g_startH, g_startW, g_endX, g_endY, g_endH, g_endW
@@ -49,8 +52,8 @@ class UIFreshThread(object):  # 界面刷新线程
 		self.deep = 0
 
 	def __call__(self):  # 调用实例本身 ——>> MyThread(self.__thread,....
-		self.nowX = multi_thread.g_x - 4076000  # from gps
-		self.nowY = multi_thread.g_y - 515000
+		self.nowX = multi_thread.g_x  # from gps
+		self.nowY = multi_thread.g_y
 		self.deep = multi_thread.g_h  # - 基准高 baseHeight from could
 
 	def get_msg_deep(self):
@@ -84,15 +87,17 @@ class MyWindows(QWidget, UI.Ui_Form):
 		img[...] = 255  # 画布
 		interval = width  # 宽度
 		currentPoint = (nowX, nowY)
-
+		global x_min, y_min
 		x_min = min(sx_list)
 		y_min = min(sy_list)
-
+		# print("x_min:", x_min)
+		# print("y_min:", y_min)
 		for i in range(len(sx_list)):
 			sx = sx_list[i] - x_min + 50
 			sy = sy_list[i] - y_min + 50
 			ex = ex_list[i] - x_min + 50
 			ey = ey_list[i] - y_min + 50
+
 			start_point = (int(sx), int(sy))  # 画中线
 			end_point = (int(ex), int(ey))
 			cv.line(img, start_point, end_point, (0, 255, 0), 2)
@@ -178,6 +183,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 		self.nowXY.setText("(%.2f, %.2f)" % (nowX, nowY))
 
 	def update(self):
+		global x_min, y_min
 		self.rightWindow(self.imgBar, self.__thread.get_msg_deep())
 		g_start_x_list = gl.get_value('g_start_x_list')  # [122.22, 32.33]
 		g_start_y_list = gl.get_value('g_start_y_list')
@@ -194,8 +200,14 @@ class MyWindows(QWidget, UI.Ui_Form):
 		self.leftWindow(self.imgLine, g_start_x_list, g_start_y_list, g_end_x_list, g_end_y_list, g_start_w_list[0],
 		                int(current_x),
 		                int(current_y))
-		# TODO：如果绘制全部的直线段，显示起点坐标和终点坐标是没有意义
-		self.showNowXY(current_x, current_y)
+
+		# print("x_min:", x_min)
+		# print("y_min:", y_min)
+		# print("current_x:", current_x)
+		# print("current_y:", current_y)
+		# print("current_x-x_min:", current_x - x_min)
+		# print("current_y-y_min:", current_y - y_min)
+		self.showNowXY(current_x - x_min, current_y - y_min)
 
 
 if __name__ == "__main__":

@@ -51,9 +51,9 @@ class Heart(object):
 
 	def send_heart_msg(self, com):
 
-		print("self.heart_dict", self.heart_dict)
 		send_buf_json = json.dumps(self.heart_dict)
 		com.send_data(send_buf_json.encode('utf-8'))
+		com.send_bytes('\n'.encode('utf-8'))
 		print("send_buf_json", send_buf_json)
 		# print("heart send succ\n")
 

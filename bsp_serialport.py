@@ -59,6 +59,9 @@ class SerialPortCommunication():
 		"""b'$\x00\x01\x08\x01\x00\x00\n'"""
 		return self.com.readline()
 
+	def send_bytes(self, data):
+		self.com.write(data)
+
 	def send_data(self, send_buffer):
 		if self.com.write(send_buffer):
 			# print("Send SUCC")
@@ -86,4 +89,4 @@ class SerialPortCommunication():
 				print("rec error：", e)
 
 	def rec_until(self, expected,  max_len = None):
-		return  self.com.read_until(expected, max_len)
+		return self.com.read_until(expected, max_len)
