@@ -201,12 +201,12 @@ class MyWindows(QWidget, UI.Ui_Form):
 		                int(current_x),
 		                int(current_y))
 
-		# print("x_min:", x_min)
-		# print("y_min:", y_min)
-		# print("current_x:", current_x)
-		# print("current_y:", current_y)
-		# print("current_x-x_min:", current_x - x_min)
-		# print("current_y-y_min:", current_y - y_min)
+		print("x_min:", x_min)
+		print("y_min:", y_min)
+		print("current_x:", current_x)
+		print("current_y:", current_y)
+		print("current_x-x_min:", current_x - x_min)
+		print("current_y-y_min:", current_y - y_min)
 		self.showNowXY(current_x - x_min, current_y - y_min)
 
 
