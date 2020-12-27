@@ -88,5 +88,5 @@ class SerialPortCommunication():
 			except Exception as e:
 				print("rec error：", e)
 
-	def rec_until(self, expected,  max_len = None):
+	def rec_until(self, expected,  max_len=None):
 		return self.com.read_until(expected, max_len)

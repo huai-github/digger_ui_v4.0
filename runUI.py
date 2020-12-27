@@ -13,36 +13,16 @@ from my_thread import MyThread
 from multi_thread import *
 import globalvar as gl
 
-# h = 480  	# 画布大小
-# w = 550
+g_ui_threadLock = threading.Lock()
 
-h = 560  # 画布大小
-w = 620
+h = 480  # 画布大小
+w = 550
 
-g_startX = 0
-g_startY = 0
-g_startH = 0
-g_startW = 0
-g_endX = 0
-g_endY = 0
-g_endH = 0
-g_endW = 0
+# h = 560  # 画布大小
+# w = 620
 
 x_min = 0
 y_min = 0
-
-
-def get_global_value():
-	global g_startX, g_startY, g_startH, g_startW, g_endX, g_endY, g_endH, g_endW
-	g_startX = gl.get_value('g_startX')
-	g_startY = gl.get_value('g_startY')
-	g_startH = gl.get_value('g_startH')
-	g_startW = gl.get_value('g_startW')
-	g_endX = gl.get_value('g_endX')
-	g_endY = gl.get_value('g_endY')
-	g_endH = gl.get_value('g_endH')
-	g_endW = gl.get_value('g_endW')
-	print("g_startW", g_startW)
 
 
 class UIFreshThread(object):  # 界面刷新线程
@@ -54,7 +34,7 @@ class UIFreshThread(object):  # 界面刷新线程
 	def __call__(self):  # 调用实例本身 ——>> MyThread(self.__thread,....
 		self.nowX = multi_thread.g_x  # from gps
 		self.nowY = multi_thread.g_y
-		self.deep = multi_thread.g_h  # - 基准高 baseHeight from could
+		self.deep = multi_thread.g_h  # H斗 - 标准高层 + 挖掘深度
 
 	def get_msg_deep(self):
 		return self.deep
@@ -90,8 +70,10 @@ class MyWindows(QWidget, UI.Ui_Form):
 		global x_min, y_min
 		x_min = min(sx_list)
 		y_min = min(sy_list)
-		# print("x_min:", x_min)
-		# print("y_min:", y_min)
+
+		save_new_pt = np.array([0, 0])
+		save_new_pt1 = np.array([0, 0])
+
 		for i in range(len(sx_list)):
 			sx = sx_list[i] - x_min + 50
 			sy = sy_list[i] - y_min + 50
@@ -116,17 +98,48 @@ class MyWindows(QWidget, UI.Ui_Form):
 			                 [0, 1, y1_offset]])
 			new_pt1 = cv.transform(np.float32([[start_point], [end_point]]), M1).astype(np.int)
 
-			box = np.array([tuple(new_pt1[0][0]), tuple(new_pt[0][0]), tuple(new_pt[1][0]), tuple(new_pt1[1][0])])
-			cv.drawContours(img, [box[:, np.newaxis, :]], 0, (0, 0, 255), 2)
+			save_new_pt = new_pt
+			save_new_pt1 = new_pt1
 
-			cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
-			dist = cv.pointPolygonTest(box, currentPoint, False)
-			print("dist", dist)
+			# print("save_new_pt[0]:", save_new_pt[0][0])  # [50  60]        [145  58]
+			# print("save_new_pt[1]:", save_new_pt[1][0])  # [150 60]        [245 114]
+			# print("save_new_pt1[0]:", save_new_pt1[0][0])  # [50  40]      [154  41]
+			# print("save_new_pt1:[1]", save_new_pt1[1][0])  # [150 40]      [254 97]
+
+			pts = np.array([save_new_pt1[0][0],
+			                save_new_pt1[1][0],
+			                new_pt1[0][0],
+			                new_pt1[1][0],
+			                new_pt1[1][0],
+			                save_new_pt[1][0],
+			                save_new_pt1[1][0],
+			                ], np.int32)
+
+			# pts = np.array([[50, 40],
+			#                 [150, 40],
+			#                 [154, 41],
+			#                 [254, 97],
+			#                 [245, 114],
+			#                 [150, 60],
+			#                 [50, 60],
+			#                 ], np.int32)
+
+			# save_new_pt = new_pt
+			# save_new_pt1 = new_pt1
+
+			cv.polylines(img, [pts], True, (255, 0, 255))  # 闭合
+
+		# box = np.array([tuple(new_pt1[0][0]), tuple(new_pt[0][0]), tuple(new_pt[1][0]), tuple(new_pt1[1][0])])
+		# cv.drawContours(img, [box[:, np.newaxis, :]], 0, (0, 0, 255), 2)
+		#
+		# cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
+		# dist = cv.pointPolygonTest(box, currentPoint, False)
+		# print("dist:", dist)
 
 		BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯位置 界内绿色
 		BorderReminderTextXY = (w - 320, h - 10)
 		cv2.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
-		self.BorderReminder.setText("   ")
+		self.BorderReminder.setText(" ")
 
 		# TODO：如果超出边界，BorderReminder红色,并提示汉字信息
 
@@ -183,8 +196,11 @@ class MyWindows(QWidget, UI.Ui_Form):
 		self.nowXY.setText("(%.2f, %.2f)" % (nowX, nowY))
 
 	def update(self):
+		g_ui_threadLock.acquire()
 		global x_min, y_min
-		self.rightWindow(self.imgBar, self.__thread.get_msg_deep())
+		worked_flag = gl.get_value("worked_flag")
+		if worked_flag:
+			self.rightWindow(self.imgBar, self.__thread.get_msg_deep())
 		g_start_x_list = gl.get_value('g_start_x_list')  # [122.22, 32.33]
 		g_start_y_list = gl.get_value('g_start_y_list')
 		g_start_h_list = gl.get_value('g_start_h_list')
@@ -194,20 +210,21 @@ class MyWindows(QWidget, UI.Ui_Form):
 		g_end_h_list = gl.get_value('g_end_h_list')
 		g_end_w_list = gl.get_value('g_end_w_list')
 		# print('g_end_w_list:', g_end_w_list)
-		# TODO: 宽度怎么办？？
+		# TODO: 宽度怎么办？？，现在使用的是起点的宽度
 
 		current_x, current_y = self.__thread.get_msg_nowXY()
 		self.leftWindow(self.imgLine, g_start_x_list, g_start_y_list, g_end_x_list, g_end_y_list, g_start_w_list[0],
 		                int(current_x),
 		                int(current_y))
 
-		print("x_min:", x_min)
-		print("y_min:", y_min)
-		print("current_x:", current_x)
-		print("current_y:", current_y)
-		print("current_x-x_min:", current_x - x_min)
-		print("current_y-y_min:", current_y - y_min)
+		# print("x_min:", x_min)
+		# print("y_min:", y_min)
+		# print("current_x:", current_x)
+		# print("current_y:", current_y)
+		# print("current_x-x_min:", current_x - x_min)
+		# print("current_y-y_min:", current_y - y_min)
 		self.showNowXY(current_x - x_min, current_y - y_min)
+		g_ui_threadLock.release()
 
 
 if __name__ == "__main__":
@@ -234,7 +251,5 @@ if __name__ == "__main__":
 			reced_flag = False
 			gl.set_value("reced_flag", reced_flag)
 			mainWindow = MyWindows()
-			get_global_value()
-			# sleep(1)
 			mainWindow.show()
 			sys.exit(app.exec_())
