@@ -1,6 +1,6 @@
 import sys
 import UI
-import cv2
+import cv2 as cv
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import QWidget, QApplication
@@ -71,9 +71,6 @@ class MyWindows(QWidget, UI.Ui_Form):
 		x_min = min(sx_list)
 		y_min = min(sy_list)
 
-		save_new_pt = np.array([0, 0])
-		save_new_pt1 = np.array([0, 0])
-
 		for i in range(len(sx_list)):
 			sx = sx_list[i] - x_min + 50
 			sy = sy_list[i] - y_min + 50
@@ -82,7 +79,6 @@ class MyWindows(QWidget, UI.Ui_Form):
 
 			start_point = (int(sx), int(sy))  # 画中线
 			end_point = (int(ex), int(ey))
-			cv.line(img, start_point, end_point, (0, 255, 0), 2)
 
 			k = (ey - sy) / (ex - sx)
 			theta = np.arctan(k)
@@ -98,53 +94,58 @@ class MyWindows(QWidget, UI.Ui_Form):
 			                 [0, 1, y1_offset]])
 			new_pt1 = cv.transform(np.float32([[start_point], [end_point]]), M1).astype(np.int)
 
-			save_new_pt = new_pt
-			save_new_pt1 = new_pt1
+			temp = np.array([
+				new_pt1[0],
+				new_pt1[1],
+				new_pt[1],
+				new_pt[0],
+			], np.int32)
 
-			# print("save_new_pt[0]:", save_new_pt[0][0])  # [50  60]        [145  58]
-			# print("save_new_pt[1]:", save_new_pt[1][0])  # [150 60]        [245 114]
-			# print("save_new_pt1[0]:", save_new_pt1[0][0])  # [50  40]      [154  41]
-			# print("save_new_pt1:[1]", save_new_pt1[1][0])  # [150 40]      [254 97]
+			if i != 0:
+				mid = len(pts) // 2
+				cv.line(img, tuple(pts[mid-1][0]), tuple(pts[mid][0]), (255, 255, 255), 2)
 
-			pts = np.array([save_new_pt1[0][0],
-			                save_new_pt1[1][0],
-			                new_pt1[0][0],
-			                new_pt1[1][0],
-			                new_pt1[1][0],
-			                save_new_pt[1][0],
-			                save_new_pt1[1][0],
-			                ], np.int32)
+				cv.line(img, tuple(pts[mid-1][0]), tuple(temp[0][0]), (255, 0, 255), 2)
+				cv.line(img, tuple(temp[0][0]), tuple(temp[1][0]), (255, 0, 255), 2)
+				cv.line(img, tuple(temp[1][0]), tuple(temp[2][0]), (255, 0, 255), 2)
+				cv.line(img, tuple(pts[mid][0]), tuple(temp[2][0]), (255, 0, 255), 2)
 
-			# pts = np.array([[50, 40],
-			#                 [150, 40],
-			#                 [154, 41],
-			#                 [254, 97],
-			#                 [245, 114],
-			#                 [150, 60],
-			#                 [50, 60],
-			#                 ], np.int32)
+				pts = np.vstack((pts[:mid], temp[1:-1], pts[mid:]))
+			else:
+				cv.polylines(img, [temp], True, (255, 0, 255), 2)  # 闭合
+				pts = temp
 
-			# save_new_pt = new_pt
-			# save_new_pt1 = new_pt1
+			# cv.line(img, start_point, end_point, (0, 255, 0), 2)  # 画中线
 
-			cv.polylines(img, [pts], True, (255, 0, 255))  # 闭合
+		gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+		ret, binary = cv.threshold(gray, 127, 255, cv.THRESH_BINARY)  # 转为二值图
+		_, contours, hierarchy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+		print(contours)
 
-		# box = np.array([tuple(new_pt1[0][0]), tuple(new_pt[0][0]), tuple(new_pt[1][0]), tuple(new_pt1[1][0])])
-		# cv.drawContours(img, [box[:, np.newaxis, :]], 0, (0, 0, 255), 2)
-		#
-		# cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
-		# dist = cv.pointPolygonTest(box, currentPoint, False)
-		# print("dist:", dist)
+		draw_img = img.copy()
+		res = cv.drawContours(draw_img, contours, 1, (0, 0, 255), 2)
+		cv.imshow('res', res)
 
-		BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯位置 界内绿色
+		box = contours[1]
+
+		currentPoint = (56, 50)
+		cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
+
+		# It returns positive (inside), negative (outside), or zero (on an edge)
+		dist = cv.pointPolygonTest(box, currentPoint, False)
+		print("dist:", dist)
+
+		BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯
 		BorderReminderTextXY = (w - 320, h - 10)
-		cv2.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
+		cv.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
+		cv.putText(img, "BorderReminder", BorderReminderTextXY, cv.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
 		self.BorderReminder.setText(" ")
 
-		# TODO：如果超出边界，BorderReminder红色,并提示汉字信息
+		if dist == -1:
+			cv.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
+			self.BorderReminder.setText("！！即将超出边界！！")
 
-		cv2.putText(img, "BorderReminder", BorderReminderTextXY, cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
-		QtImgLine = QImage(cv2.cvtColor(img, cv2.COLOR_BGR2RGB).data,
+		QtImgLine = QImage(cv.cvtColor(img, cv.COLOR_BGR2RGB).data,
 		                   img.shape[1],
 		                   img.shape[0],
 		                   img.shape[1] * 3,  # 每行的字节数, 彩图*3
@@ -210,7 +211,6 @@ class MyWindows(QWidget, UI.Ui_Form):
 		g_end_h_list = gl.get_value('g_end_h_list')
 		g_end_w_list = gl.get_value('g_end_w_list')
 		# print('g_end_w_list:', g_end_w_list)
-		# TODO: 宽度怎么办？？，现在使用的是起点的宽度
 
 		current_x, current_y = self.__thread.get_msg_nowXY()
 		self.leftWindow(self.imgLine, g_start_x_list, g_start_y_list, g_end_x_list, g_end_y_list, g_start_w_list[0],
@@ -239,7 +239,7 @@ if __name__ == "__main__":
 	# g_laser3_thread = threading.Thread(target=multi_thread.thread_laser3_func, daemon=True)
 	# calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=True)
 
-	gps_thread.start()  # 启动线程
+	# gps_thread.start()  # 启动线程
 	mainWindow = MyWindows()
 	_4g_thread.start()
 	# gyro_thread.start()

@@ -61,7 +61,7 @@ class TimeInterval(object):
 
 
 def thread_gps_func():
-	GPS_COM = "com5"
+	GPS_COM = "com21"
 	GPS_REC_BUF_LEN = 138
 	h_last = 0		# 上一次的海拔
 	delta_temp = 0
@@ -113,7 +113,7 @@ def thread_gps_func():
 
 
 def thread_4g_func():
-	COM_ID_4G = "com21"
+	COM_ID_4G = "com14"
 	rec = RecTasks()
 	heart = Heart(TYPE_HEART, diggerId)
 	com_4g = SerialPortCommunication(COM_ID_4G, 115200, 0.5)
@@ -180,6 +180,8 @@ def thread_gyro_func():
 		if gyro_rec_buf[0] == 0x50 and gyro_rec_buf[1] == 0x03:
 			gyro.roll = int(((RollH << 8) | RollL)) / 32768 * 180
 			gyro.pitch = int(((PitchH << 8) | PitchL)) / 32768 * 180
+			gyro.roll = round(gyro.roll, 2)
+			gyro.pitch = round(gyro.pitch, 2)
 			print("roll:", gyro.roll)
 			print("pitch:", gyro.pitch)
 			print("------------------------------------------")
@@ -202,7 +204,7 @@ def thread_laser2_func():
 	laser2_dist = laser2.get_distance()
 	gl.set_value("laser2_dist", laser2_dist)
 	g_laser2_threadLock.release()
-	
+
 
 def thread_laser3_func():
 	LASER3_COM = "com33"
