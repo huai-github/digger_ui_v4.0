@@ -1,4 +1,6 @@
 import sys
+from math import sqrt
+
 import UI
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -23,6 +25,10 @@ w = 550
 
 x_min = 0
 y_min = 0
+
+
+def y1(d, x1, x0, y0):
+	return y0 + sqrt((d ** 2) + (x1 - x0) ** 2)
 
 
 class UIFreshThread(object):  # 界面刷新线程
@@ -63,16 +69,25 @@ class MyWindows(QWidget, UI.Ui_Form):
 	def set_slot(self):
 		self.__timer.timeout.connect(self.update)
 
-	def leftWindow(self, img, sx_list, sy_list, ex_list, ey_list, width, nowX, nowY):
+	def leftWindow(self, img, sx_list, sy_list, ex_list, ey_list, s_width, e_width, nowX, nowY):
+		line_shift = 7  # 画直线时小数点的位数
 		img[...] = 255  # 画布
-		interval = width  # 宽度
+		below_sx = 0
+		below_sy = 0
+		below_ex = 0
+		below_ey = 0
+		above_sx = 0
+		above_sy = 0
+		above_ex = 0
+		above_ey = 0
+
 		currentPoint = (nowX, nowY)
 		global x_min, y_min
 		x_min = min(sx_list)
 		y_min = min(sy_list)
 
 		for i in range(len(sx_list)):
-			sx = sx_list[i] - x_min + 50
+			sx = sx_list[i] - x_min + 50  # sx = x0
 			sy = sy_list[i] - y_min + 50
 			ex = ex_list[i] - x_min + 50
 			ey = ey_list[i] - y_min + 50
@@ -80,60 +95,117 @@ class MyWindows(QWidget, UI.Ui_Form):
 			start_point = (int(sx), int(sy))  # 画中线
 			end_point = (int(ex), int(ey))
 
+			cv.line(img, start_point, end_point, (0, 255, 0), 2)  # 画中线
+
 			k = (ey - sy) / (ex - sx)
+			print("中线斜率：", k)
 			theta = np.arctan(k)
-			x_offset = interval * sin(theta) * -1
-			y_offset = interval * cos(theta)
-			M = np.float32([[1, 0, x_offset],
-			                [0, 1, y_offset]])
-			new_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
+			if k != 0:
+				# 计算点的坐标
+				x_below_s = s_width[i] * sin(theta) * -1  # 根据中线偏移的直线坐标
+				y_below_s = s_width[i] * cos(theta)
+				M = np.float32([[1, 0, x_below_s],
+				                [0, 1, y_below_s]])
+				start_below_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
+				# 起点：start_below_pt[0][0]， 终点：start_below_pt[1][0]
+				below_sx = tuple(start_below_pt[0][0])  # 只要起点坐标，舍掉终点，重新计算终点坐标
 
-			x1_offset = interval * sin(theta)
-			y1_offset = interval * cos(theta) * -1
-			M1 = np.float32([[1, 0, x1_offset],
-			                 [0, 1, y1_offset]])
-			new_pt1 = cv.transform(np.float32([[start_point], [end_point]]), M1).astype(np.int)
+				x_below_e = e_width[i] * sin(theta) * -1  # 根据中线偏移的直线坐标
+				y_below_e = e_width[i] * cos(theta)
+				M = np.float32([[1, 0, x_below_e],
+				                [0, 1, y_below_e]])
+				end_below_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
+				below_ey = tuple(end_below_pt[1][0])
+				cv.line(img, below_sx, below_ey, (0, 0, 255), 2)
+				
+				x_above_s = s_width[i] * sin(theta)   # 根据中线偏移的直线坐标
+				y_above_s = s_width[i] * cos(theta) * -1
+				M = np.float32([[1, 0, x_above_s],
+				                [0, 1, y_above_s]])
+				start_above_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
+				above_sx = tuple(start_above_pt[0][0])
 
-			temp = np.array([
-				new_pt1[0],
-				new_pt1[1],
-				new_pt[1],
-				new_pt[0],
-			], np.int32)
+				x_above_e = e_width[i] * sin(theta)   # 根据中线偏移的直线坐标
+				y_above_e = e_width[i] * cos(theta) * -1
+				M = np.float32([[1, 0, x_above_e],
+				                [0, 1, y_above_e]])
+				end_above_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
+				above_ey = tuple(end_above_pt[1][0])
+				cv.line(img, above_sx, above_ey, (0, 0, 255), 2)
 
-			if i != 0:
-				mid = len(pts) // 2
-				cv.line(img, tuple(pts[mid-1][0]), tuple(pts[mid][0]), (255, 255, 255), 2)
+			else:   # 中线斜率为0
+				above_sx = sx                # 起点上面x
+				above_sy = sy - s_width[i]     # 起点上面y
+				below_sx = sx
+				below_sy = sy + s_width[i]
 
-				cv.line(img, tuple(pts[mid-1][0]), tuple(temp[0][0]), (255, 0, 255), 2)
-				cv.line(img, tuple(temp[0][0]), tuple(temp[1][0]), (255, 0, 255), 2)
-				cv.line(img, tuple(temp[1][0]), tuple(temp[2][0]), (255, 0, 255), 2)
-				cv.line(img, tuple(pts[mid][0]), tuple(temp[2][0]), (255, 0, 255), 2)
+				above_ex = ex                # 终点上面x
+				above_ey = ey - e_width[i]     # 终点上面y
+				below_ex = ex
+				below_ey = ey + e_width[i]
 
-				pts = np.vstack((pts[:mid], temp[1:-1], pts[mid:]))
-			else:
-				cv.polylines(img, [temp], True, (255, 0, 255), 2)  # 闭合
-				pts = temp
+				above_pts1 = (int(above_sx), int(above_sy))
+				above_pts2 = (int(above_ex), int(above_ey))
 
+				below_pts1 = (int(below_sx), int(below_sy))
+				below_pts2 = (int(below_ex), int(below_ey))
+
+				cv.line(img, above_pts1, above_pts2, (255, 0, 255), 1)
+				cv.line(img, below_pts1, below_pts2, (255, 0, 255), 1)
+
+			# x_offset = interval * sin(theta) * -1  # 根据中线偏移的直线坐标
+			# y_offset = interval * cos(theta)
+			# M = np.float32([[1, 0, x_offset],
+			#                 [0, 1, y_offset]])
+			# start_new_pt0 = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
+			#
+			# x1_offset = interval * sin(theta)
+			# y1_offset = interval * cos(theta) * -1
+			# M1 = np.float32([[1, 0, x1_offset],
+			#                  [0, 1, y1_offset]])
+			# start_new_pt1 = cv.transform(np.float32([[start_point], [end_point]]), M1).astype(np.int)
+##########################################################################################################
+			# temp = np.array([
+			# 	start_new_pt1[0],
+			# 	start_new_pt1[1],
+			# 	start_new_pt0[1],
+			# 	start_new_pt0[0],
+			# ], np.int32)
+			#
+			# if i != 0:
+			# 	mid = len(pts) // 2
+			# 	cv.line(img, tuple(pts[mid-1][0]), tuple(pts[mid][0]), (255, 255, 255), 2)
+			#
+			# 	cv.line(img, tuple(pts[mid-1][0]), tuple(temp[0][0]), (255, 0, 255), 2)
+			# 	cv.line(img, tuple(temp[0][0]), tuple(temp[1][0]), (255, 0, 255), 2)
+			# 	cv.line(img, tuple(temp[1][0]), tuple(temp[2][0]), (255, 0, 255), 2)
+			# 	cv.line(img, tuple(pts[mid][0]), tuple(temp[2][0]), (255, 0, 255), 2)
+			#
+			# 	pts = np.vstack((pts[:mid], temp[1:-1], pts[mid:]))
+			# else:
+			# 	cv.polylines(img, [temp], True, (255, 0, 255), 2)  # 闭合
+			# 	pts = temp
+			#
 			# cv.line(img, start_point, end_point, (0, 255, 0), 2)  # 画中线
 
 		gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 		ret, binary = cv.threshold(gray, 127, 255, cv.THRESH_BINARY)  # 转为二值图
 		_, contours, hierarchy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-		print(contours)
 
-		draw_img = img.copy()
-		res = cv.drawContours(draw_img, contours, 1, (0, 0, 255), 2)
-		cv.imshow('res', res)
+		# print(contours)
 
-		box = contours[1]
+		# draw_img = img.copy()
+		# res = cv.drawContours(draw_img, contours, 0, (0, 0, 255), 2)
+		# cv.imshow('res', res)
+
+		box = contours[0]
 
 		currentPoint = (56, 50)
 		cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
 
 		# It returns positive (inside), negative (outside), or zero (on an edge)
 		dist = cv.pointPolygonTest(box, currentPoint, False)
-		print("dist:", dist)
+		# print("dist:", dist)
 
 		BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯
 		BorderReminderTextXY = (w - 320, h - 10)
@@ -213,16 +285,12 @@ class MyWindows(QWidget, UI.Ui_Form):
 		# print('g_end_w_list:', g_end_w_list)
 
 		current_x, current_y = self.__thread.get_msg_nowXY()
-		self.leftWindow(self.imgLine, g_start_x_list, g_start_y_list, g_end_x_list, g_end_y_list, g_start_w_list[0],
+		self.leftWindow(self.imgLine, g_start_x_list, g_start_y_list, g_end_x_list, g_end_y_list,
+		                g_start_w_list,
+		                g_end_w_list,
 		                int(current_x),
 		                int(current_y))
 
-		# print("x_min:", x_min)
-		# print("y_min:", y_min)
-		# print("current_x:", current_x)
-		# print("current_y:", current_y)
-		# print("current_x-x_min:", current_x - x_min)
-		# print("current_y-y_min:", current_y - y_min)
 		self.showNowXY(current_x - x_min, current_y - y_min)
 		g_ui_threadLock.release()
 
