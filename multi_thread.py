@@ -113,7 +113,7 @@ def thread_gps_func():
 
 
 def thread_4g_func():
-	COM_ID_4G = "com14"
+	COM_ID_4G = "com22"
 	rec = RecTasks()
 	heart = Heart(TYPE_HEART, diggerId)
 	com_4g = SerialPortCommunication(COM_ID_4G, 115200, 0.5)
