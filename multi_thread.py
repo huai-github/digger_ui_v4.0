@@ -63,8 +63,7 @@ class TimeInterval(object):
 def thread_gps_func():
 	GPS_COM = "com21"
 	GPS_REC_BUF_LEN = 138
-	h_last = 0		# 上一次的海拔
-	delta_temp = 0
+	values = []
 	while True:
 		gps_data = GPSINSData()
 		gps_msg_switch = LatLonAlt()
@@ -81,39 +80,27 @@ def thread_gps_func():
 		g_x, g_y = LatLon2XY(gps_msg_switch.latitude, gps_msg_switch.longitude)
 		g_h = gps_msg_switch.altitude
 		# print("g_h:", g_h)
-		# TODO：真实高程 = 斗 - 标准
-
 		"""判断挖完一次标志"""
+		values.append(g_h)
+		before_is_neg = False
+		before_val = values[0]
 
-		# h_list.append(g_h)
-		# print("h_list:", h_list)
-		# h_min = h_list.index(min(h_list))
-		# if len(h_list) < 2:
-		# 	if h_list[h_min+1] > h_list[h_min]:
-		# 		h_list = []
-		# 		worked_flag = True
-		# 		gl.set_value("worked_flag", worked_flag)
-
-		delta = g_h - h_last
-		# print("delta:", delta)
-		delta_temp = delta
-
-		if delta > 0:
-			h_last = g_h
-			worked_flag = True
-			gl.set_value("worked_flag", worked_flag)
-
-		# if delta > 0:
-		# 	h_last = g_h
-		# 	worked_flag = True
-		# 	gl.set_value("worked_flag", worked_flag)
-		# print("x：%s\t y：%s\t deep：%s" % (g_x, g_y, g_h))  # 高斯坐标
+		for v in values[1:]:
+			diff = v - before_val
+			if diff >= 0:
+				if before_is_neg:
+					values = []
+					worked_flag = True
+					gl.set_value("worked_flag", worked_flag)
+				before_is_neg = False
+			else:
+				before_is_neg = True
 
 		g_gps_threadLock.release()  # 解锁
 
 
 def thread_4g_func():
-	COM_ID_4G = "com22"
+	COM_ID_4G = "com9"
 	rec = RecTasks()
 	heart = Heart(TYPE_HEART, diggerId)
 	com_4g = SerialPortCommunication(COM_ID_4G, 115200, 0.5)
@@ -167,10 +154,8 @@ def thread_gyro_func():
 	read_command = [0x50, 0x03, 0x00, 0x3d, 0x00, 0x03, 0x99, 0x86]
 	com_gyro = SerialPortCommunication(GYRO_COM, 9600, 0.5)
 	while True:
-		g_gyro_threadLock.acquire()
 		com_gyro.send_data(read_command)
 		gyro_rec_buf = com_gyro.read_size(GYRO_REC_BUF_LEN)
-		# print(gyro_rec_buf)
 
 		RollH = gyro_rec_buf[3]
 		RollL = gyro_rec_buf[4]
@@ -178,38 +163,50 @@ def thread_gyro_func():
 		PitchL = gyro_rec_buf[6]
 
 		if gyro_rec_buf[0] == 0x50 and gyro_rec_buf[1] == 0x03:
+			g_gyro_threadLock.acquire()
 			gyro.roll = int(((RollH << 8) | RollL)) / 32768 * 180
 			gyro.pitch = int(((PitchH << 8) | PitchL)) / 32768 * 180
+
 			gyro.roll = round(gyro.roll, 2)
 			gyro.pitch = round(gyro.pitch, 2)
+
+			gl.set_value("roll", gyro.roll)
+			gl.set_value("pitch", gyro.pitch)
+
+			g_gyro_threadLock.release()
+
 			print("roll:", gyro.roll)
 			print("pitch:", gyro.pitch)
-			print("------------------------------------------")
-		g_gyro_threadLock.release()
 
 
 def thread_laser1_func():
-	LASER1_COM = "com11"
+	LASER1_COM = "com1"
 	laser1 = Laser(LASER1_COM)
-	g_laser1_threadLock.acquire()
-	laser1_dist = laser1.get_distance()
-	gl.set_value("laser1_dist", laser1_dist)
-	g_laser1_threadLock.release()
+	while True:
+		g_laser1_threadLock.acquire()
+		laser1_dist = laser1.get_distance()
+		gl.set_value("laser1_dist", laser1_dist)
+		g_laser1_threadLock.release()
+		print("laser1_dist", laser1_dist)
 	
 
 def thread_laser2_func():
 	LASER2_COM = "com22"
 	laser2 = Laser(LASER2_COM)
-	g_laser2_threadLock.acquire()
-	laser2_dist = laser2.get_distance()
-	gl.set_value("laser2_dist", laser2_dist)
-	g_laser2_threadLock.release()
+	while True:
+		g_laser2_threadLock.acquire()
+		laser2_dist = laser2.get_distance()
+		gl.set_value("laser2_dist", laser2_dist)
+		g_laser2_threadLock.release()
+		print("laser2_dist", laser2_dist)
 
 
 def thread_laser3_func():
 	LASER3_COM = "com33"
 	laser3 = Laser(LASER3_COM)
-	g_laser3_threadLock.acquire()
-	laser3_dist = laser3.get_distance()
-	gl.set_value("laser3_dist", laser3_dist)
-	g_laser3_threadLock.release()
+	while True:
+		g_laser3_threadLock.acquire()
+		laser3_dist = laser3.get_distance()
+		gl.set_value("laser3_dist", laser3_dist)
+		g_laser3_threadLock.release()
+		print("laser3_dist", laser3_dist)

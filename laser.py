@@ -24,7 +24,7 @@ class Laser(object):
 					print("--LASER READ ERROR--")
 				else:
 					self.distance = float(distance)
-					print("distance: ", self.distance)
+					# print("distance: ", self.distance)
 				return self.distance
 
 
