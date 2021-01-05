@@ -28,10 +28,6 @@ x_min = 0
 y_min = 0
 
 
-def y1(d, x1, x0, y0):
-    return y0 + sqrt((d ** 2) + (x1 - x0) ** 2)
-
-
 class UIFreshThread(object):  # 界面刷新线程
     def __init__(self):
         self.nowX = 0  # from gps
@@ -41,7 +37,8 @@ class UIFreshThread(object):  # 界面刷新线程
     def __call__(self):  # 调用实例本身 ——>> MyThread(self.__thread,....
         self.nowX = multi_thread.g_x  # from gps
         self.nowY = multi_thread.g_y
-        self.deep = gl.get_value("h0") - multi_thread.g_h
+        # self.deep = gl.get_value("h0") - gl.get_value("g_start_h_list")
+        self.deep = multi_thread.g_h
 
     def get_msg_deep(self):
         return self.deep
@@ -78,7 +75,6 @@ class MyWindows(QWidget, UI.Ui_Form):
         self.__timer.timeout.connect(self.update)
 
     def leftWindow(self, img, sx_list, sy_list, ex_list, ey_list, s_width, e_width, nowX, nowY):
-        line_shift = 7  # 画直线时小数点的位数
         img[...] = 255  # 画布
         below_start = 0
         below_end = 0
@@ -99,8 +95,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 
             start_point = (int(sx), int(sy))  # 画中线
             end_point = (int(ex), int(ey))
-
-            cv.line(img, start_point, end_point, (0, 255, 0), 2)  # 画中线
+            cv.line(img, start_point, end_point, (0, 255, 0), 1)
 
             k = (ey - sy) / (ex - sx)
             theta = np.arctan(k)
@@ -197,7 +192,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 
         gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         ret, binary = cv.threshold(gray, 127, 255, cv.THRESH_BINARY)  # 转为二值图
-        contours, hierarchy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        _, contours, hierarchy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         # 画出轮廓线
         # draw_img = img.copy()
         # res = cv.drawContours(draw_img, contours, 1, (0, 0, 255), 2)
@@ -205,7 +200,9 @@ class MyWindows(QWidget, UI.Ui_Form):
 
         box = contours[1]
 
-        currentPoint = (70, 50)
+        # currentPoint = (70, 50)
+        currentPoint = (int(currentPoint[0] - x_min + 50), int(currentPoint[1] - y_min + 50))
+        print("currentPoint", currentPoint)
         cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
 
         # It returns positive (inside), negative (outside), or zero (on an edge)
@@ -276,10 +273,11 @@ class MyWindows(QWidget, UI.Ui_Form):
     def update(self):
         g_ui_threadLock.acquire()
         global x_min, y_min
+
         worked_flag = gl.get_value("worked_flag")
         if worked_flag:
             self.rightWindow(self.imgBar, self.__thread.get_msg_deep())
-        g_start_x_list = gl.get_value('g_start_x_list')  # [122.22, 32.33]
+        g_start_x_list = gl.get_value('g_start_x_list')
         g_start_y_list = gl.get_value('g_start_y_list')
         g_start_h_list = gl.get_value('g_start_h_list')
         g_start_w_list = gl.get_value('g_start_w_list')
@@ -294,7 +292,8 @@ class MyWindows(QWidget, UI.Ui_Form):
                         g_start_w_list,
                         g_end_w_list,
                         int(current_x),
-                        int(current_y))
+                        int(current_y),
+                        )
 
         self.showNowXY(current_x - x_min, current_y - y_min)
         g_ui_threadLock.release()
@@ -304,20 +303,22 @@ if __name__ == "__main__":
     gl.gl_init()
     app = QApplication(sys.argv)
 
-    gps_thread = threading.Thread(target=multi_thread.thread_gps_func, daemon=True)
-    _4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=True)
+    gps_thread = threading.Thread(target=multi_thread.thread_gps_func, daemon=False)
+    _4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=False)
     gyro_thread = threading.Thread(target=multi_thread.thread_gyro_func, daemon=True)
     g_laser1_thread = threading.Thread(target=multi_thread.thread_laser1_func, daemon=True)
-    # g_laser2_thread = threading.Thread(target=multi_thread.thread_laser2_func, daemon=True)
-    # g_laser3_thread = threading.Thread(target=multi_thread.thread_laser3_func, daemon=True)
-    calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=True)
+    g_laser2_thread = threading.Thread(target=multi_thread.thread_laser2_func, daemon=True)
+    g_laser3_thread = threading.Thread(target=multi_thread.thread_laser3_func, daemon=True)
+    calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=False)
 
-    # gps_thread.start()  # 启动线程
+    gps_thread.start()  # 启动线程
     mainWindow = MyWindows()
     _4g_thread.start()
-    gyro_thread.start()
-    g_laser1_thread.start()
-    calculate_thread.start()
+    # gyro_thread.start()
+    # g_laser1_thread.start()
+    # g_laser2_thread.start()
+    # g_laser3_thread.start()
+    # calculate_thread.start()
 
     while True:
         reced_flag = gl.get_value("reced_flag")

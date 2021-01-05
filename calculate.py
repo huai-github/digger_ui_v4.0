@@ -24,6 +24,10 @@ def altitude_calculate_func():
 		l_fi = gl.get_value("laser3_dist")
 		ab = gl.get_value("pitch")
 		print("ab", ab)
+		hg = gl.get_value("gps_h")
+		print("hg", hg)
+
+
 
 		# if l_bc != 0 and l_de != 0 and l_fi != 0:
 		# 	"""

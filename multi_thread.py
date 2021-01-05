@@ -61,7 +61,7 @@ class TimeInterval(object):
 
 
 def thread_gps_func():
-	GPS_COM = "com21"
+	GPS_COM = "com26"
 	GPS_REC_BUF_LEN = 138
 	values = []
 	while True:
@@ -79,12 +79,14 @@ def thread_gps_func():
 		global g_x, g_y, g_h
 		g_x, g_y = LatLon2XY(gps_msg_switch.latitude, gps_msg_switch.longitude)
 		g_h = gps_msg_switch.altitude
+		gl.set_value("gps_h", g_h)  # 计算h0使用
+		# print("g_x:", g_x)
+		# print("g_y:", g_y)
 		# print("g_h:", g_h)
 		"""判断挖完一次标志"""
 		values.append(g_h)
 		before_is_neg = False
 		before_val = values[0]
-
 		for v in values[1:]:
 			diff = v - before_val
 			if diff >= 0:
@@ -92,6 +94,7 @@ def thread_gps_func():
 					values = []
 					worked_flag = True
 					gl.set_value("worked_flag", worked_flag)
+					print("min", v)
 				before_is_neg = False
 			else:
 				before_is_neg = True
@@ -100,7 +103,7 @@ def thread_gps_func():
 
 
 def thread_4g_func():
-	COM_ID_4G = "com9"
+	COM_ID_4G = "com20"
 	rec = RecTasks()
 	heart = Heart(TYPE_HEART, diggerId)
 	com_4g = SerialPortCommunication(COM_ID_4G, 115200, 0.5)
