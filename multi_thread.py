@@ -61,7 +61,7 @@ class TimeInterval(object):
 
 
 def thread_gps_func():
-	GPS_COM = "com26"
+	GPS_COM = "com20"
 	GPS_REC_BUF_LEN = 138
 	values = []
 	while True:
@@ -75,35 +75,36 @@ def thread_gps_func():
 		gps_data.gps_msg_analysis(gps_rec_buffer)
 		gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude = gps_data.gps_typeswitch()
 		# print("纬度：%s\t经度：%s\t海拔：%s\t" % (gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude))
-		# 经纬度转高斯坐标
+		"""经纬度转高斯坐标"""
 		global g_x, g_y, g_h
 		g_x, g_y = LatLon2XY(gps_msg_switch.latitude, gps_msg_switch.longitude)
 		g_h = gps_msg_switch.altitude
 		gl.set_value("gps_h", g_h)  # 计算h0使用
-		# print("g_x:", g_x)
-		# print("g_y:", g_y)
+		# print("x:%s\ty:%s:" % (g_x, g_y))
 		# print("g_h:", g_h)
 		"""判断挖完一次标志"""
 		values.append(g_h)
+		print("values", values)
 		before_is_neg = False
 		before_val = values[0]
-		for v in values[1:]:
-			diff = v - before_val
+		for i in range(1, len(values)):
+			diff = values[i] - before_val
 			if diff >= 0:
 				if before_is_neg:
-					values = []
 					worked_flag = True
 					gl.set_value("worked_flag", worked_flag)
-					print("min", v)
+					print("***min***", values[i-1])
+					# values = []
 				before_is_neg = False
+				before_val = values[i]
 			else:
 				before_is_neg = True
-
+				before_val = values[i]
 		g_gps_threadLock.release()  # 解锁
 
 
 def thread_4g_func():
-	COM_ID_4G = "com20"
+	COM_ID_4G = "com28"
 	rec = RecTasks()
 	heart = Heart(TYPE_HEART, diggerId)
 	com_4g = SerialPortCommunication(COM_ID_4G, 115200, 0.5)

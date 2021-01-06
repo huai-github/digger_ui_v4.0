@@ -202,7 +202,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 
         # currentPoint = (70, 50)
         currentPoint = (int(currentPoint[0] - x_min + 50), int(currentPoint[1] - y_min + 50))
-        print("currentPoint", currentPoint)
+        # print("currentPoint", currentPoint)
         cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
 
         # It returns positive (inside), negative (outside), or zero (on an edge)
