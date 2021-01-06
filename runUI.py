@@ -38,7 +38,8 @@ class UIFreshThread(object):  # 界面刷新线程
         self.nowX = multi_thread.g_x  # from gps
         self.nowY = multi_thread.g_y
         # self.deep = gl.get_value("h0") - gl.get_value("g_start_h_list")
-        self.deep = multi_thread.g_h
+        self.deep = gl.get_value("gps_h")
+        # self.deep = multi_thread.g_h
 
     def get_msg_deep(self):
         return self.deep
@@ -67,7 +68,7 @@ class MyWindows(QWidget, UI.Ui_Form):
         self.set_slot()
         self.__thread = UIFreshThread()  # 开启线程(同时将这个线程类作为一个属性)
         MyThread(self.__thread, (), name='UIFreshThread', daemon=True).start()
-        self.__timer.start(1000)  # ms
+        self.__timer.start(50)  # ms
         self.DeepList = []
         self.NumList = []
 
@@ -314,11 +315,11 @@ if __name__ == "__main__":
     gps_thread.start()  # 启动线程
     mainWindow = MyWindows()
     _4g_thread.start()
-    # gyro_thread.start()
-    # g_laser1_thread.start()
+    gyro_thread.start()
+    g_laser1_thread.start()
     # g_laser2_thread.start()
     # g_laser3_thread.start()
-    # calculate_thread.start()
+    calculate_thread.start()
 
     while True:
         reced_flag = gl.get_value("reced_flag")

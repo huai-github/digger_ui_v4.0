@@ -93,10 +93,12 @@ def thread_gps_func():
 				if before_is_neg:
 					worked_flag = True
 					gl.set_value("worked_flag", worked_flag)
+					gl.set_value("gps_h", values[i-1])
 					print("***min***", values[i-1])
-					# values = []
+
 				before_is_neg = False
 				before_val = values[i]
+				values = []
 			else:
 				before_is_neg = True
 				before_val = values[i]
@@ -144,7 +146,7 @@ def thread_4g_func():
 
 		# 发送
 		if worked_flag:
-			send = SendMessage(TYPE_HEART, diggerId, round(g_x, 2), round(g_y, 2), round(g_h, 2), 0)  # round(g_x, 2)保留2位小数
+			send = SendMessage(TYPE_HEART, diggerId, round(g_x, 3), round(g_y, 3), round(g_h, 3), 0)  # round(g_x, 3)保留3位小数
 			send_msg_json = send.switch_to_json()
 			com_4g.send_data(send_msg_json.encode('utf-8'))
 			worked_flag = False
@@ -152,7 +154,7 @@ def thread_4g_func():
 
 
 def thread_gyro_func():
-	GYRO_COM = "com11"
+	GYRO_COM = "com30"
 	gyro = Gyro()
 	GYRO_REC_BUF_LEN = 33
 	read_command = [0x50, 0x03, 0x00, 0x3d, 0x00, 0x03, 0x99, 0x86]
@@ -174,24 +176,26 @@ def thread_gyro_func():
 			gyro.roll = round(gyro.roll, 2)
 			gyro.pitch = round(gyro.pitch, 2)
 
-			gl.set_value("roll", gyro.roll)
-			gl.set_value("pitch", gyro.pitch)
+			if gyro.roll is not None and gyro.pitch is not None:
+				gl.set_value("roll", gyro.roll)
+				gl.set_value("pitch", gyro.pitch)
 
 			g_gyro_threadLock.release()
 
-			print("roll:", gyro.roll)
-			print("pitch:", gyro.pitch)
+			# print("roll:", gyro.roll)
+			# print("pitch:", gyro.pitch)
 
 
 def thread_laser1_func():
-	LASER1_COM = "com1"
+	LASER1_COM = "com31"
 	laser1 = Laser(LASER1_COM)
 	while True:
 		g_laser1_threadLock.acquire()
 		laser1_dist = laser1.get_distance()
-		gl.set_value("laser1_dist", laser1_dist)
+		if laser1_dist is not None:
+			gl.set_value("laser1_dist", laser1_dist)
 		g_laser1_threadLock.release()
-		print("laser1_dist", laser1_dist)
+		# print("laser1_dist", laser1_dist)
 	
 
 def thread_laser2_func():
@@ -200,7 +204,8 @@ def thread_laser2_func():
 	while True:
 		g_laser2_threadLock.acquire()
 		laser2_dist = laser2.get_distance()
-		gl.set_value("laser2_dist", laser2_dist)
+		if laser2_dist is not None:
+			gl.set_value("laser2_dist", laser2_dist)
 		g_laser2_threadLock.release()
 		print("laser2_dist", laser2_dist)
 
@@ -211,6 +216,7 @@ def thread_laser3_func():
 	while True:
 		g_laser3_threadLock.acquire()
 		laser3_dist = laser3.get_distance()
-		gl.set_value("laser3_dist", laser3_dist)
+		if laser3_dist is not None:
+			gl.set_value("laser3_dist", laser3_dist)
 		g_laser3_threadLock.release()
 		print("laser3_dist", laser3_dist)

@@ -1,6 +1,4 @@
-from math import acos, sqrt, cos
-from bsp_gps import GPSINSData
-from gyro import Gyro
+from math import acos, cos, pi
 import globalvar as gl
 
 
@@ -18,68 +16,85 @@ def laser_dist_to_angle(adjacent_1, adjacent_2, laser_dist):
 
 def altitude_calculate_func():
 	while True:
-		l_bc = gl.get_value("laser1_dist")
-		print("l_bc", l_bc)
-		l_de = gl.get_value("laser2_dist")
-		l_fi = gl.get_value("laser3_dist")
-		ab = gl.get_value("pitch")
-		print("ab", ab)
-		hg = gl.get_value("gps_h")
-		print("hg", hg)
+		# 各点的高程, h表示高程，g表示对应的点
+		h_g = 15
+		# h_g = gl.get_value("gps_h")
+		h_j = 0
+		h_o = 0
 
+		# pad笔记本下所测数据, l表示直线，_后面的两个字母表示对应的线段, dlt表示线段增量
+		dlt_bc = gl.get_value("laser1_dist")
+		dlt_de = gl.get_value("laser2_dist")
+		dlt_fi = gl.get_value("laser3_dist")
+		a_ab = gl.get_value("pitch")
+		# if dlt_bc is not None and dlt_de is not None and dlt_fi is not None and a_ab is not None:
+		if dlt_bc is not None and a_ab is not None:
+			print("dlt_bc", dlt_bc)
+			print("a_ab", a_ab)
+			l_ac = 7.5
+			l_ab = 2.6
+			l_ag = 15.2
+			l_ad = 10.2
+			l_bc = 6.2 + dlt_bc
+			l_cg = 8.6
+			l_cd = 2.7
+			l_dg = 6
+			# l_de = 7.5 + dlt_de
+			l_de = 7.5000
+			l_eg = 2.5
+			l_eh = 7.1
+			l_fg = 2.2
+			l_fh = 5.7
+			# l_fi = 5.6 + dlt_fi
+			l_fi = 5.6000
+			l_gh = 5
+			l_gj = 6
+			l_hi = 2.2
+			l_hj = 1.0
+			l_ik = 1.9
+			l_ij = 2.4
+			l_jk = 1.2
+			l_jo = 4.0
+			l_ko = 4.6
 
+			# a表示角度，_后面的字母表示对应的角或射线
+			# 大臂
+			# a_ab = -0.09
 
-		# if l_bc != 0 and l_de != 0 and l_fi != 0:
-		# 	"""
-		# 	大臂：
-		# 	"""
-		# 	l_ab, l_ac, cag = 0
-		# 	gyro = Gyro()
-		# 	ab = gyro.pitch
-		# 	cab = laser_dist_to_angle(l_ab, l_ac, l_bc)
-		# 	ag = cab + ab - cag
-		# 	if ag > 0:
-		# 		print("上仰")
-		# 		pass
-		# 	else:
-		# 		print("下倾")
-		# 		pass
-		#
-		# 	"""
-		# 	小臂
-		# 	"""
-		# 	l_dg, l_ge, jgh, egh, dga = 0
-		# 	ga = -(90 - ag)
-		# 	agp = abs(ga)
-		#
-		# 	dge = laser_dist_to_angle(l_dg, l_ge, l_de)
-		# 	gj = 360 - jgh - egh - dga - agp - dge
-		# 	alpha = gj
-		#
-		# 	"""
-		# 	挖斗
-		# 	"""
-		# 	l_hj, l_hi, l_jk, l_ik, l_hf, fhi, ghf, ghj, gjf, kjo, gjh = 0
-		# 	jhi = 360 - ghj - gjf - fhi
-		# 	l_ij = sqrt((l_hi ** 2) + (l_hj ** 2) - (2 * l_hi * l_hj * cos(jhi)))
-		#
-		# 	hji = laser_dist_to_angle(l_hj, l_ij, l_hi)
-		# 	ijk = laser_dist_to_angle(l_jk, l_ij, l_ik)
-		# 	hjk = hji + ijk
-		#
-		# 	fhi = laser_dist_to_angle(l_hi, l_hf, l_fi)
-		# 	jhi = 360 - ghj - ghf - fhi
-		#
-		# 	jo = 360 + 180 + gj - (gjh + hjk + kjo)
-		# 	beta = jo
-		# 	"""
-		# 	高程计算
-		# 	已知：l_gj, l_jo
-		# 	"""
-		# 	l_gj, l_jo = 0
-		# 	gps = GPSINSData()
-		# 	hg = gps.gps_typeswitch()[-1]
-		# 	h0 = hg - l_gj * cos(alpha) - l_jo * cos(beta)
-		# 	gl.set_value("h0", h0)
-		# 	return h0
+			a_cab = acos((l_ac ** 2 + l_ab ** 2 - l_bc ** 2) / (2 * l_ac * l_ab))
+			a_cag = acos((l_ac ** 2 + l_ag ** 2 - l_cg ** 2) / (2 * l_ac * l_ag))
+			a_ag = a_cab + a_ab - a_cag
 
+			# 小臂
+			a_jgh = acos((l_gh ** 2 + l_gj ** 2 - l_hj ** 2) / (2 * l_gh * l_gj))
+			a_egh = acos((l_eg ** 2 + l_gh ** 2 - l_eh ** 2) / (2 * l_eg * l_gh))
+			a_dga = acos((l_dg ** 2 + l_ag ** 2 - l_ad ** 2) / (2 * l_dg * l_ag))
+			a_dge = acos((l_dg ** 2 + l_eg ** 2 - l_de ** 2) / (2 * l_dg * l_eg))
+			a_ga = -(pi / 2 - a_ag)
+			a_agp = abs(a_ga)
+			a_gj = 2 * pi - a_jgh - a_egh - a_dga - a_agp - a_dge
+
+			# 挖斗
+			# 计算角hjk
+			a_ghj = acos((l_gh ** 2 + l_hj ** 2 - l_gj ** 2) / (2 * l_gh * l_hj))
+			a_ghf = acos((l_gh ** 2 + l_fh ** 2 - l_fg ** 2) / (2 * l_gh * l_fh))
+			a_fhi = acos((l_fh ** 2 + l_hi ** 2 - l_fi ** 2) / (2 * l_fh * l_hi))
+			a_jhi = 2 * pi - a_ghj - a_ghf - a_fhi
+			l_ij = (l_hi ** 2 + l_hj ** 2 - 2 * l_hi * l_hj * cos(a_jhi)) ** 0.5
+
+			a_hji = acos((l_hj ** 2 + l_ij ** 2 - l_hi ** 2) / (2 * l_hj * l_ij))
+			a_ijk = acos((l_ij ** 2 + l_jk ** 2 - l_ik ** 2) / (2 * l_ij * l_jk))
+			a_hjk = a_hji + a_ijk
+
+			# 计算jo
+			a_jg = pi + a_gj
+			a_gjh = acos((l_gj ** 2 + l_hj ** 2 - l_gh ** 2) / (2 * l_gj * l_hj))
+			a_kjo = acos((l_jk ** 2 + l_jo ** 2 - l_ko ** 2) / (2 * l_jk * l_jo))
+			a_jo = 2 * pi + a_jg - (a_gjh + a_hjk + a_kjo)
+			# (a_jo - 2 * pi) * 180 / pi
+			print((a_jo - 2 * pi) * 180 / pi)
+
+			# 计算高程
+			h_j = h_g - l_gj * cos(a_gj)
+			h_o = h_j - l_jo * cos(a_jo)
+			gl.set_value("h_o", h_o)
