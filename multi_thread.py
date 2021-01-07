@@ -80,11 +80,12 @@ def thread_gps_func():
 		g_x, g_y = LatLon2XY(gps_msg_switch.latitude, gps_msg_switch.longitude)
 		g_h = gps_msg_switch.altitude
 		gl.set_value("gps_h", g_h)  # 计算h0使用
+
 		# print("x:%s\ty:%s:" % (g_x, g_y))
 		# print("g_h:", g_h)
 		"""判断挖完一次标志"""
 		values.append(g_h)
-		print("values", values)
+		# print("values", values)
 		before_is_neg = False
 		before_val = values[0]
 		for i in range(1, len(values)):
@@ -93,7 +94,9 @@ def thread_gps_func():
 				if before_is_neg:
 					worked_flag = True
 					gl.set_value("worked_flag", worked_flag)
-					gl.set_value("gps_h", values[i-1])
+					g_h = values[i-1]
+					# print("g_h", g_h)
+					gl.set_value("gps_h", g_h)  # 计算h0使用
 					print("***min***", values[i-1])
 
 				before_is_neg = False
@@ -146,6 +149,7 @@ def thread_4g_func():
 
 		# 发送
 		if worked_flag:
+			print("send g_h", g_h)
 			send = SendMessage(TYPE_HEART, diggerId, round(g_x, 3), round(g_y, 3), round(g_h, 3), 0)  # round(g_x, 3)保留3位小数
 			send_msg_json = send.switch_to_json()
 			com_4g.send_data(send_msg_json.encode('utf-8'))
@@ -154,7 +158,7 @@ def thread_4g_func():
 
 
 def thread_gyro_func():
-	GYRO_COM = "com30"
+	GYRO_COM = "com32"
 	gyro = Gyro()
 	GYRO_REC_BUF_LEN = 33
 	read_command = [0x50, 0x03, 0x00, 0x3d, 0x00, 0x03, 0x99, 0x86]
@@ -179,24 +183,23 @@ def thread_gyro_func():
 			if gyro.roll is not None and gyro.pitch is not None:
 				gl.set_value("roll", gyro.roll)
 				gl.set_value("pitch", gyro.pitch)
+				# print("roll:", gyro.roll)
+				# print("pitch:", gyro.pitch)
 
 			g_gyro_threadLock.release()
 
-			# print("roll:", gyro.roll)
-			# print("pitch:", gyro.pitch)
-
 
 def thread_laser1_func():
-	LASER1_COM = "com31"
+	LASER1_COM = "com33"
 	laser1 = Laser(LASER1_COM)
 	while True:
 		g_laser1_threadLock.acquire()
 		laser1_dist = laser1.get_distance()
 		if laser1_dist is not None:
 			gl.set_value("laser1_dist", laser1_dist)
+			# print("laser1_dist", laser1_dist)
 		g_laser1_threadLock.release()
-		# print("laser1_dist", laser1_dist)
-	
+
 
 def thread_laser2_func():
 	LASER2_COM = "com22"

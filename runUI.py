@@ -37,9 +37,13 @@ class UIFreshThread(object):  # 界面刷新线程
     def __call__(self):  # 调用实例本身 ——>> MyThread(self.__thread,....
         self.nowX = multi_thread.g_x  # from gps
         self.nowY = multi_thread.g_y
-        # self.deep = gl.get_value("h0") - gl.get_value("g_start_h_list")
-        self.deep = gl.get_value("gps_h")
-        # self.deep = multi_thread.g_h
+        h_o = gl.get_value("h_o")
+        g_start_h_list = gl.get_value("g_start_h_list")
+        # print("h_o", h_o)
+        # print("g_start_h_list", g_start_h_list)
+        if h_o is not None and g_start_h_list is not None:
+            self.deep = h_o - g_start_h_list[0]
+            # print("deep:%s\n" % self.deep)
 
     def get_msg_deep(self):
         return self.deep
@@ -269,12 +273,11 @@ class MyWindows(QWidget, UI.Ui_Form):
         self.rightLabel.setPixmap(pixmapR)
 
     def showNowXY(self, nowX, nowY):
-        self.nowXY.setText("(%.2f, %.2f)" % (nowX, nowY))
+        self.nowXY.setText("(%.3f, %.3f)" % (nowX, nowY))
 
     def update(self):
         g_ui_threadLock.acquire()
         global x_min, y_min
-
         worked_flag = gl.get_value("worked_flag")
         if worked_flag:
             self.rightWindow(self.imgBar, self.__thread.get_msg_deep())
@@ -313,13 +316,16 @@ if __name__ == "__main__":
     calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=False)
 
     gps_thread.start()  # 启动线程
-    mainWindow = MyWindows()
+
     _4g_thread.start()
     gyro_thread.start()
     g_laser1_thread.start()
     # g_laser2_thread.start()
     # g_laser3_thread.start()
+    sleep(1)
     calculate_thread.start()
+
+    mainWindow = MyWindows()
 
     while True:
         reced_flag = gl.get_value("reced_flag")

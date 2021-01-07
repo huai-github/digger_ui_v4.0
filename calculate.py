@@ -1,6 +1,9 @@
+import threading
 from math import acos, cos, pi
 import globalvar as gl
 
+
+g_calculate_threadLock = threading.Lock()
 
 def laser_dist_to_angle(adjacent_1, adjacent_2, laser_dist):
 	"""
@@ -16,9 +19,10 @@ def laser_dist_to_angle(adjacent_1, adjacent_2, laser_dist):
 
 def altitude_calculate_func():
 	while True:
+		g_calculate_threadLock.acquire()
 		# 各点的高程, h表示高程，g表示对应的点
-		h_g = 15
-		# h_g = gl.get_value("gps_h")
+		# h_g = 15
+		h_g = gl.get_value("gps_h")
 		h_j = 0
 		h_o = 0
 
@@ -27,10 +31,12 @@ def altitude_calculate_func():
 		dlt_de = gl.get_value("laser2_dist")
 		dlt_fi = gl.get_value("laser3_dist")
 		a_ab = gl.get_value("pitch")
-		# if dlt_bc is not None and dlt_de is not None and dlt_fi is not None and a_ab is not None:
-		if dlt_bc is not None and a_ab is not None:
-			print("dlt_bc", dlt_bc)
-			print("a_ab", a_ab)
+
+		# if h_g is not None and dlt_bc is not None and dlt_de is not None and dlt_fi is not None and a_ab is not None:
+		if h_g is not None and dlt_bc is not None and a_ab is not None:
+			print("h_g", h_g)
+			# print("dlt_bc", dlt_bc)
+			# print("a_ab", a_ab)
 			l_ac = 7.5
 			l_ab = 2.6
 			l_ag = 15.2
@@ -91,10 +97,12 @@ def altitude_calculate_func():
 			a_gjh = acos((l_gj ** 2 + l_hj ** 2 - l_gh ** 2) / (2 * l_gj * l_hj))
 			a_kjo = acos((l_jk ** 2 + l_jo ** 2 - l_ko ** 2) / (2 * l_jk * l_jo))
 			a_jo = 2 * pi + a_jg - (a_gjh + a_hjk + a_kjo)
-			# (a_jo - 2 * pi) * 180 / pi
-			print((a_jo - 2 * pi) * 180 / pi)
+			# (a_jo - 2 * pi) * 180.0 / pi
+			# print((a_jo - 2 * pi) * 180.0 / pi)
 
 			# 计算高程
 			h_j = h_g - l_gj * cos(a_gj)
 			h_o = h_j - l_jo * cos(a_jo)
 			gl.set_value("h_o", h_o)
+			# print("h_o", h_o)
+			g_calculate_threadLock.release()
