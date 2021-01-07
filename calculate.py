@@ -31,10 +31,12 @@ def altitude_calculate_func():
 		dlt_de = gl.get_value("laser2_dist")
 		dlt_fi = gl.get_value("laser3_dist")
 		a_ab = gl.get_value("pitch")
-
+		# print("h_g", h_g)
+		# print("dlt_bc", dlt_bc)
+		# print("a_ab", a_ab)
 		# if h_g is not None and dlt_bc is not None and dlt_de is not None and dlt_fi is not None and a_ab is not None:
 		if h_g is not None and dlt_bc is not None and a_ab is not None:
-			print("h_g", h_g)
+			# print("h_g", h_g)
 			# print("dlt_bc", dlt_bc)
 			# print("a_ab", a_ab)
 			l_ac = 7.5

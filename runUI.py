@@ -1,6 +1,5 @@
 import sys
 from math import sqrt
-
 import UI
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -39,8 +38,8 @@ class UIFreshThread(object):  # 界面刷新线程
         self.nowY = multi_thread.g_y
         h_o = gl.get_value("h_o")
         g_start_h_list = gl.get_value("g_start_h_list")
-        # print("h_o", h_o)
-        # print("g_start_h_list", g_start_h_list)
+        # print("h_o-2", h_o)
+        # print("g_start_h_list", g_start_h_list[0])
         if h_o is not None and g_start_h_list is not None:
             self.deep = h_o - g_start_h_list[0]
             # print("deep:%s\n" % self.deep)

@@ -97,7 +97,7 @@ def thread_gps_func():
 					g_h = values[i-1]
 					# print("g_h", g_h)
 					gl.set_value("gps_h", g_h)  # 计算h0使用
-					print("***min***", values[i-1])
+					# print("***min***", values[i-1])
 
 				before_is_neg = False
 				before_val = values[i]
@@ -116,8 +116,7 @@ def thread_4g_func():
 	
 	# 间隔一分钟发送一次心跳
 	start = datetime.now().replace(minute=0, second=0, microsecond=0)
-	# TODO:现在是6s，改成一分钟
-	minute = TimeInterval(start, 6, heart.send_heart_msg, [com_4g])
+	minute = TimeInterval(start, 60, heart.send_heart_msg, [com_4g])
 	minute.start()
 	minute.cancel()
 
@@ -149,7 +148,7 @@ def thread_4g_func():
 
 		# 发送
 		if worked_flag:
-			print("send g_h", g_h)
+			# print("send g_h", g_h)
 			send = SendMessage(TYPE_HEART, diggerId, round(g_x, 3), round(g_y, 3), round(g_h, 3), 0)  # round(g_x, 3)保留3位小数
 			send_msg_json = send.switch_to_json()
 			com_4g.send_data(send_msg_json.encode('utf-8'))
