@@ -91,10 +91,12 @@ class MyWindows(QWidget, UI.Ui_Form):
     def leftWindow(self, img, sx_list, sy_list, ex_list, ey_list, s_width, e_width, nowX, nowY):
         img[...] = 255  # 画布
 
-        currentPoint = (nowX, nowY)
+        currentPoint = [nowX, nowY]
+        currentPoint_move = [None, None]
+        currentPoint_zoom = [None, None]
 
         last_lines = [None, None]  # 保存上一条直线
-
+        
         sx_list2 = []
         sy_list2 = []
         ex_list2 = []
@@ -113,23 +115,15 @@ class MyWindows(QWidget, UI.Ui_Form):
         save_intersection_xr = []
         save_intersection_yl = []
         save_intersection_yr = []
-        median_k = []
 
         # 求出所有点
         for i in range(len(sx_list)):
             line_point_s = np.array([sx_list[i], sy_list[i]])
             line_point_e = np.array([ex_list[i], ey_list[i]])
-            # cv.line(img, (int(line_point_s[0]), int(line_point_s[1])), (int(line_point_e[0]), int(line_point_e[1])), (0, 255,0), 1)
-            # cv.imshow("zhongxian", img)
 
             median_k = (line_point_s[1] - line_point_e[1]) / (line_point_s[0] - line_point_e[0])
             median_b = line_point_s[1] - median_k * line_point_s[0]
-            # print("%d-median_k:%f" % (i+1, median_k))
-            # print("%d-median_b:%f" % (i+1, median_b))
-
-            # median_G = np.array([-median_k, median_b])
             median_G = np.array([-median_k, 1])
-            # print(median_G)
 
             # 平移出四个点
             line_point_s_l = line_point_s + s_width[i] * median_G / cv.norm(median_G)
@@ -137,17 +131,11 @@ class MyWindows(QWidget, UI.Ui_Form):
             line_point_e_l = line_point_e + e_width[i] * median_G / cv.norm(median_G)
             line_point_e_r = line_point_e - e_width[i] * median_G / cv.norm(median_G)
 
-            # 两侧的线
-            # cv.line(img, (int(line_point_s_l[0]), int(line_point_s_l[1])), (int(line_point_e_l[0]), int(line_point_e_l[1])), (0, 0,255), 1)
-            # cv.line(img, (int(line_point_s_r[0]), int(line_point_s_r[1])), (int(line_point_e_r[0]), int(line_point_e_r[1])), (0, 0,255), 1)
-
             # 求平移出的直线方程
             kl = (line_point_s_l[1] - line_point_e_l[1]) / (line_point_s_l[0] - line_point_e_l[0])
             bl = line_point_s_l[1] - (kl * line_point_s_l[0])
             kr = (line_point_s_r[1] - line_point_e_r[1]) / (line_point_s_r[0] - line_point_e_r[0])
             br = line_point_s_r[1] - (kr * line_point_s_r[0])
-            # print("kl", kl)
-            # print("bl", bl)
 
             # 两直线交点
             if i > 0:
@@ -158,10 +146,7 @@ class MyWindows(QWidget, UI.Ui_Form):
                 yl = kl * xl + bl
                 xr = (br - before_br) / (before_kr - kr)
                 yr = kr * xr + br
-                # cv.circle(img, (int(xl), int(yl)), 3, (255, 0, 0), -1)
-                # cv.circle(img, (int(xr), int(yr)), 3, (255, 0, 0), -1)
-                # print("交点", xl, yl)
-                # print("交点", xr, yr)
+
                 # 保存交点坐标
                 save_intersection_xl.append(xl)
                 save_intersection_yl.append(yl)
@@ -183,20 +168,25 @@ class MyWindows(QWidget, UI.Ui_Form):
             save_line_point_ey_r_list.append(line_point_e_r[1])
 
         # 所有点 = 中线坐标 + 平移出的坐标 + 交点坐标
-        x_list = (sx_list + ex_list) + (save_line_point_sx_l_list+save_line_point_sx_r_list+save_line_point_ex_l_list +
-                                        save_line_point_ex_r_list) + (save_intersection_xl + save_intersection_xr)
-        y_list = (sy_list + ey_list) + (save_line_point_sy_l_list+save_line_point_sy_r_list+save_line_point_ey_l_list +
-                                        save_line_point_ey_r_list) + (save_intersection_yl + save_intersection_yr)
-        # print("x_list0", x_list)
-        # print("y_list0", y_list)
+        x_list = (sx_list + ex_list) \
+                 + (save_line_point_sx_l_list+save_line_point_sx_r_list+save_line_point_ex_l_list + save_line_point_ex_r_list) \
+                 + (save_intersection_xl + save_intersection_xr)
+        # x_list.append(currentPoint[0])
+
+        y_list = (sy_list + ey_list) \
+                 + (save_line_point_sy_l_list+save_line_point_sy_r_list+save_line_point_ey_l_list + save_line_point_ey_r_list) \
+                 + (save_intersection_yl + save_intersection_yr)
+        # y_list.append(currentPoint[1])
 
         # 平移所有点
         x_min = min(x_list)
         y_min = min(y_list)
         x_max = max(x_list)
         y_max = max(y_list)
-        # print("x_min:", x_min)
-        # print("y_min:", y_min)
+
+        currentPoint_move[0] = currentPoint[0] - x_min
+        currentPoint_move[1] = currentPoint[1] - y_min
+        
         x_list[:] = [v - x_min for v in x_list]
         y_list[:] = [v - y_min for v in y_list]
 
@@ -234,6 +224,9 @@ class MyWindows(QWidget, UI.Ui_Form):
         zoom_y = ((h - 30) / y_delta_max)
 
         # 所有点乘以系数
+        currentPoint_zoom[0] = currentPoint_move[0] * zoom_x + delta
+        currentPoint_zoom[1] = currentPoint_move[1] * zoom_y + delta
+        
         x_list[:] = [v * zoom_x + delta for v in x_list]
         y_list[:] = [v * zoom_y + delta for v in y_list]
 
@@ -249,7 +242,6 @@ class MyWindows(QWidget, UI.Ui_Form):
         save_line_point_ex_l_list[:] = [v * zoom_x + delta for v in save_line_point_ex_l_list]
         save_line_point_ey_l_list[:] = [v * zoom_y + delta for v in save_line_point_ey_l_list]
 
-        # cv.imshow("xiamian", img)
         save_line_point_sx_r_list[:] = [v * zoom_x + delta for v in save_line_point_sx_r_list]
         save_line_point_sy_r_list[:] = [v * zoom_y + delta for v in save_line_point_sy_r_list]
 
@@ -266,7 +258,6 @@ class MyWindows(QWidget, UI.Ui_Form):
         # 中线
         for i in range(len(sx_list2)):
             cv.line(img, (int(sx_list2[i]), int(sy_list2[i])), (int(ex_list2[i]), int(ey_list2[i])), (0, 255, 0), 1)
-        # cv.imshow("zhongxian", img)
 
         """如果就交点存在"""
         if save_intersection_xl != []:
@@ -350,35 +341,34 @@ class MyWindows(QWidget, UI.Ui_Form):
         ret, binary = cv.threshold(gray, 127, 255, cv.THRESH_BINARY)  # 转为二值图
         _, contours, hierarchy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
-        # print(contours)
-
         # 画出轮廓线
-        draw_img = img.copy()
-        res = cv.drawContours(draw_img, contours, 1, (0, 255, 0), 2)
-        cv.imshow('res', res)
+        # draw_img = img.copy()
+        # res = cv.drawContours(draw_img, contours, 1, (0, 255, 0), 2)
+        # cv.imshow('res', res)
 
         # show_img("l", img)
 
-        # box = contours[1]
-        #
-        # currentPoint = (int((currentPoint[0] - x_min) * zoom_x + 5),
-        #                 int((currentPoint[1] - y_min) * zoom_y + 5))
-        #
-        # cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
-        #
-        # # It returns positive (inside), negative (outside), or zero (on an edge)
-        # dist = cv.pointPolygonTest(box, currentPoint, False)
-        # # print("dist:", dist)
-        #
-        # BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯
-        # BorderReminderTextXY = (w - 320, h - 10)
-        # cv.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
-        # cv.putText(img, "BorderReminder", BorderReminderTextXY, cv.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
-        # self.BorderReminder.setText(" ")
+        box = contours[1]
+        currentPoint_zoom = (
+            int(currentPoint_zoom[0]),
+            int(currentPoint_zoom[1])
+        )
 
-        # if dist == -1:
-        #     cv.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
-        #     self.BorderReminder.setText("！！即将超出边界！！")
+        cv.circle(img, currentPoint_zoom, 5, [0, 0, 255], -1)
+
+        # It returns positive (inside), negative (outside), or zero (on an edge)
+        dist = cv.pointPolygonTest(contours[1], currentPoint_zoom, False)
+        # print("dist:", dist)
+
+        BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯
+        BorderReminderTextXY = (w - 320, h - 10)
+        cv.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
+        cv.putText(img, "BorderReminder", BorderReminderTextXY, cv.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
+        self.BorderReminder.setText(" ")
+
+        if dist == -1:
+            cv.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
+            self.BorderReminder.setText("！！即将超出边界！！")
 
         QtImgLine = QImage(cv.cvtColor(img, cv.COLOR_BGR2RGB).data,
                            img.shape[1],
