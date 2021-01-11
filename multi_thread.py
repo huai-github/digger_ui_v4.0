@@ -1,3 +1,4 @@
+from math import sqrt
 from time import sleep
 
 from bsp_serialport import *
@@ -79,7 +80,7 @@ def thread_gps_func():
 		global g_x, g_y, g_h
 		g_x, g_y = LatLon2XY(gps_msg_switch.latitude, gps_msg_switch.longitude)
 		g_h = gps_msg_switch.altitude
-		gl.set_value("gps_h", g_h)  # 计算h0使用
+		gl.set_value("gps_h", g_h)
 
 		# print("x:%s\ty:%s:" % (g_x, g_y))
 		# print("g_h:", g_h)
@@ -131,6 +132,7 @@ def thread_4g_func():
 			rec_buf_dict = task_switch_dict(rec_buf)
 			rec.save_msg(rec_buf_dict)
 			sx_list, sy_list, sh_list, sw_list, ex_list, ey_list, eh_list, ew_list = get_xyhw(rec_buf_dict)
+
 			gl.set_value('g_start_x_list', sx_list)
 			gl.set_value('g_start_y_list', sy_list)
 			gl.set_value('g_start_h_list', sh_list)
@@ -140,6 +142,15 @@ def thread_4g_func():
 			gl.set_value('g_end_h_list', eh_list)
 			gl.set_value('g_end_w_list', ew_list)
 
+			dist_list = []
+			for i in range(len(sx_list)):
+				dist = sqrt(((sy_list[i] - ey_list[i]) ** 2) + ((sx_list[i] - ex_list[i]) ** 2))
+				# print("dist", dist)
+				dist_list.append(dist)
+				# print("dist_list", dist_list)
+			max_dist_list = max(dist_list)
+			print("max_dist_list:", max_dist_list)
+			gl.set_value("max_dist_list", max_dist_list)
 			"""任务接收完成标志"""
 			reced_flag = True
 			gl.set_value("reced_flag", reced_flag)

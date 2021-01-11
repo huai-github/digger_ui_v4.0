@@ -25,7 +25,12 @@ w = 550
 
 x_min = 0
 y_min = 0
+x_max = 0
+y_max = 0
 
+zoom_x = 0
+zoom_y = 0
+delta = 5
 
 class UIFreshThread(object):  # 界面刷新线程
     def __init__(self):
@@ -37,11 +42,16 @@ class UIFreshThread(object):  # 界面刷新线程
         self.nowX = multi_thread.g_x  # from gps
         self.nowY = multi_thread.g_y
         h_o = gl.get_value("h_o")
+        # base_h = gl.get_value("base_h")
         g_start_h_list = gl.get_value("g_start_h_list")
+
         # print("h_o-2", h_o)
+        # print("base_h", base_h)
         # print("g_start_h_list", g_start_h_list[0])
         if h_o is not None and g_start_h_list is not None:
             self.deep = h_o - g_start_h_list[0]
+            # self.deep = h_o - base_h
+
             # print("deep:%s\n" % self.deep)
 
     def get_msg_deep(self):
@@ -80,148 +90,295 @@ class MyWindows(QWidget, UI.Ui_Form):
 
     def leftWindow(self, img, sx_list, sy_list, ex_list, ey_list, s_width, e_width, nowX, nowY):
         img[...] = 255  # 画布
-        below_start = 0
-        below_end = 0
-        above_start = 0
-        above_end = 0
 
         currentPoint = (nowX, nowY)
-        global x_min, y_min
-        x_min = min(sx_list)
-        y_min = min(sy_list)
 
         last_lines = [None, None]  # 保存上一条直线
+
+        sx_list2 = []
+        sy_list2 = []
+        ex_list2 = []
+        ey_list2 = []
+
+        save_line_point_sx_l_list = []
+        save_line_point_ex_l_list = []
+        save_line_point_sx_r_list = []
+        save_line_point_ex_r_list = []
+        save_line_point_sy_l_list = []
+        save_line_point_ey_l_list = []
+        save_line_point_sy_r_list = []
+        save_line_point_ey_r_list = []
+
+        save_intersection_xl = []
+        save_intersection_xr = []
+        save_intersection_yl = []
+        save_intersection_yr = []
+        median_k = []
+
+        # 求出所有点
         for i in range(len(sx_list)):
-            sx = sx_list[i] - x_min + 50  # sx = x0
-            sy = sy_list[i] - y_min + 50
-            ex = ex_list[i] - x_min + 50
-            ey = ey_list[i] - y_min + 50
+            line_point_s = np.array([sx_list[i], sy_list[i]])
+            line_point_e = np.array([ex_list[i], ey_list[i]])
+            # cv.line(img, (int(line_point_s[0]), int(line_point_s[1])), (int(line_point_e[0]), int(line_point_e[1])), (0, 255,0), 1)
+            # cv.imshow("zhongxian", img)
 
-            start_point = (int(sx), int(sy))  # 画中线
-            end_point = (int(ex), int(ey))
-            cv.line(img, start_point, end_point, (0, 255, 0), 1)
+            median_k = (line_point_s[1] - line_point_e[1]) / (line_point_s[0] - line_point_e[0])
+            median_b = line_point_s[1] - median_k * line_point_s[0]
+            # print("%d-median_k:%f" % (i+1, median_k))
+            # print("%d-median_b:%f" % (i+1, median_b))
 
-            k = (ey - sy) / (ex - sx)
-            theta = np.arctan(k)
+            # median_G = np.array([-median_k, median_b])
+            median_G = np.array([-median_k, 1])
+            # print(median_G)
 
-            """计算点的坐标"""
-            # 下侧直线
-            x_below_s = s_width[i] * sin(theta) * -1  # 根据中线偏移的直线坐标
-            y_below_s = s_width[i] * cos(theta)
-            M = np.float32([[1, 0, x_below_s],
-                            [0, 1, y_below_s]])
-            start_below_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
-            # 起点：start_below_pt[0][0]， 终点：start_below_pt[1][0]
-            # below_start = tuple(start_below_pt[0][0])  # 只要起点坐标，舍掉终点，重新计算终点坐标
-            below_start = start_below_pt[0][0]  # 只要起点坐标，舍掉终点，重新计算终点坐标
+            # 平移出四个点
+            line_point_s_l = line_point_s + s_width[i] * median_G / cv.norm(median_G)
+            line_point_s_r = line_point_s - s_width[i] * median_G / cv.norm(median_G)
+            line_point_e_l = line_point_e + e_width[i] * median_G / cv.norm(median_G)
+            line_point_e_r = line_point_e - e_width[i] * median_G / cv.norm(median_G)
 
-            x_below_e = e_width[i] * sin(theta) * -1  # 根据中线偏移的直线坐标
-            y_below_e = e_width[i] * cos(theta)
-            M = np.float32([[1, 0, x_below_e],
-                            [0, 1, y_below_e]])
-            end_below_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
-            # below_end = tuple(end_below_pt[1][0])
-            below_end = end_below_pt[1][0]
+            # 两侧的线
+            # cv.line(img, (int(line_point_s_l[0]), int(line_point_s_l[1])), (int(line_point_e_l[0]), int(line_point_e_l[1])), (0, 0,255), 1)
+            # cv.line(img, (int(line_point_s_r[0]), int(line_point_s_r[1])), (int(line_point_e_r[0]), int(line_point_e_r[1])), (0, 0,255), 1)
 
-            # 上侧直线
-            x_above_s = s_width[i] * sin(theta)  # 根据中线偏移的直线坐标
-            y_above_s = s_width[i] * cos(theta) * -1
-            M = np.float32([[1, 0, x_above_s],
-                            [0, 1, y_above_s]])
-            start_above_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
-            # above_start = tuple(start_above_pt[0][0])
-            above_start = start_above_pt[0][0]
+            # 求平移出的直线方程
+            kl = (line_point_s_l[1] - line_point_e_l[1]) / (line_point_s_l[0] - line_point_e_l[0])
+            bl = line_point_s_l[1] - (kl * line_point_s_l[0])
+            kr = (line_point_s_r[1] - line_point_e_r[1]) / (line_point_s_r[0] - line_point_e_r[0])
+            br = line_point_s_r[1] - (kr * line_point_s_r[0])
+            # print("kl", kl)
+            # print("bl", bl)
 
-            x_above_e = e_width[i] * sin(theta)  # 根据中线偏移的直线坐标
-            y_above_e = e_width[i] * cos(theta) * -1
-            M = np.float32([[1, 0, x_above_e],
-                            [0, 1, y_above_e]])
-            end_above_pt = cv.transform(np.float32([[start_point], [end_point]]), M).astype(np.int)
-            # above_end = tuple(end_above_pt[1][0])
-            above_end = end_above_pt[1][0]
-
-            # cv.line(img, tuple(below_start), tuple(below_end), (0, 0, 255), 1)
-            # cv.line(img, tuple(above_start), tuple(above_end), (0, 0, 255), 1)
-            pts = np.array([
-                [above_start],
-                [above_end],
-                [below_end],
-                [below_start],
-            ], np.int32)
-
-            # 计算当前线段的斜率
-            below_k = (below_end[1] - below_start[1]) / (below_end[0] - below_start[0])
-            below_b = below_start[1] - (below_k * below_start[0])
-            above_k = (above_end[1] - above_start[1]) / (above_end[0] - above_start[0])
-            above_b = above_start[1] - (above_k * above_start[0])
-
+            # 两直线交点
             if i > 0:
-                # 获得上一条线的斜率和后端点
-                before_above_pt, before_above_k, before_above_b = last_lines[0]
-                before_below_pt, before_below_k, before_below_b = last_lines[1]
+                before_line_point_e_l, before_kl, before_bl = last_lines[0]
+                before_line_point_e_r, before_kr, before_br = last_lines[1]
 
-                # 断开前一步闭合的连线
-                cv.line(img, before_above_pt, before_below_pt, (255, 255, 255), 2)
-                # show_img("delete line", img)
-
-                # 计算交点
-                intersection_above_pt_x = (above_b - before_above_b) / (before_above_k - above_k)
-                intersection_above_pt_y = above_k * intersection_above_pt_x + above_b
-                intersection_below_pt_x = (below_b - before_below_b) / (before_below_k - below_k)
-                intersection_below_pt_y = below_k * intersection_below_pt_x + below_b
-
-                intersection_above_pt = (int(intersection_above_pt_x), int(intersection_above_pt_y))
-                intersection_below_pt = (int(intersection_below_pt_x), int(intersection_below_pt_y))
-                # cv.circle(img, intersection_above_pt, 3, (255, 0, 0), -1)
-                # cv.circle(img, intersection_below_pt, 3, (255, 0, 0), -1)
-                # show_img("circle", img)
-
-                # 连接上边界的终点与交点
-                cv.line(img, before_above_pt, intersection_above_pt, (255, 0, 255), 2)
-                # show_img("up line", img)
-                # 删除下边界的终点与交点
-                cv.line(img, before_below_pt, intersection_below_pt, (255, 255, 255), 2)
-                # show_img("down line", img)
-
-                pts[0] = intersection_above_pt  # 将上线段的起点替换为交点
-                pts[-1] = intersection_below_pt  # 将下线段的起点替换为交点
-
-            is_closed = False if i > 0 else True
-            cv.polylines(img, [pts], is_closed, (255, 0, 255), 2)  # 闭合
-            # show_img("img", img)
+                xl = (bl - before_bl) / (before_kl - kl)
+                yl = kl * xl + bl
+                xr = (br - before_br) / (before_kr - kr)
+                yr = kr * xr + br
+                # cv.circle(img, (int(xl), int(yl)), 3, (255, 0, 0), -1)
+                # cv.circle(img, (int(xr), int(yr)), 3, (255, 0, 0), -1)
+                # print("交点", xl, yl)
+                # print("交点", xr, yr)
+                # 保存交点坐标
+                save_intersection_xl.append(xl)
+                save_intersection_yl.append(yl)
+                save_intersection_xr.append(xr)
+                save_intersection_yr.append(yr)
 
             # 保存本边界的斜率和终点
-            last_lines[0] = (tuple(above_end), above_k, above_b)
-            last_lines[1] = (tuple(below_end), below_k, below_b)
+            last_lines[0] = (tuple(line_point_e_l), kl, bl)
+            last_lines[1] = (tuple(line_point_e_r), kr, br)
+            # 保存平移出的4个点坐标
+            save_line_point_sx_l_list.append(line_point_s_l[0])
+            save_line_point_sx_r_list.append(line_point_s_r[0])
+            save_line_point_ex_l_list.append(line_point_e_l[0])
+            save_line_point_ex_r_list.append(line_point_e_r[0])
+
+            save_line_point_sy_l_list.append(line_point_s_l[1])
+            save_line_point_sy_r_list.append(line_point_s_r[1])
+            save_line_point_ey_l_list.append(line_point_e_l[1])
+            save_line_point_ey_r_list.append(line_point_e_r[1])
+
+        # 所有点 = 中线坐标 + 平移出的坐标 + 交点坐标
+        x_list = (sx_list + ex_list) + (save_line_point_sx_l_list+save_line_point_sx_r_list+save_line_point_ex_l_list +
+                                        save_line_point_ex_r_list) + (save_intersection_xl + save_intersection_xr)
+        y_list = (sy_list + ey_list) + (save_line_point_sy_l_list+save_line_point_sy_r_list+save_line_point_ey_l_list +
+                                        save_line_point_ey_r_list) + (save_intersection_yl + save_intersection_yr)
+        # print("x_list0", x_list)
+        # print("y_list0", y_list)
+
+        # 平移所有点
+        x_min = min(x_list)
+        y_min = min(y_list)
+        x_max = max(x_list)
+        y_max = max(y_list)
+        # print("x_min:", x_min)
+        # print("y_min:", y_min)
+        x_list[:] = [v - x_min for v in x_list]
+        y_list[:] = [v - y_min for v in y_list]
+
+        sx_list2[:] = [v - x_min for v in sx_list]
+        sy_list2[:] = [v - y_min for v in sy_list]
+
+        ex_list2[:] = [v - x_min for v in ex_list]
+        ey_list2[:] = [v - y_min for v in ey_list]
+
+        save_line_point_sx_l_list[:] = [v - x_min for v in save_line_point_sx_l_list]
+        save_line_point_sy_l_list[:] = [v - y_min for v in save_line_point_sy_l_list]
+
+        save_line_point_sx_r_list[:] = [v - x_min for v in save_line_point_sx_r_list]
+        save_line_point_sy_r_list[:] = [v - y_min for v in save_line_point_sy_r_list]
+
+        save_line_point_ex_l_list[:] = [v - x_min for v in save_line_point_ex_l_list]
+        save_line_point_ey_l_list[:] = [v - y_min for v in save_line_point_ey_l_list]
+
+        save_line_point_ex_r_list[:] = [v - x_min for v in save_line_point_ex_r_list]
+        save_line_point_ey_r_list[:] = [v - y_min for v in save_line_point_ey_r_list]
+
+        save_intersection_xl[:] = [v - x_min for v in save_intersection_xl]
+        save_intersection_yl[:] = [v - y_min for v in save_intersection_yl]
+
+        save_intersection_xr[:] = [v - x_min for v in save_intersection_xr]
+        save_intersection_yr[:] = [v - y_min for v in save_intersection_yr]
+
+        # 找xy的最大差值
+        x_delta_max = x_max - x_min
+        y_delta_max = y_max - y_min
+
+        # 缩放因子
+        global zoom_x, zoom_y
+        zoom_x = ((w - 30) / x_delta_max)
+        zoom_y = ((h - 30) / y_delta_max)
+
+        # 所有点乘以系数
+        x_list[:] = [v * zoom_x + delta for v in x_list]
+        y_list[:] = [v * zoom_y + delta for v in y_list]
+
+        sx_list2[:] = [v * zoom_x + delta for v in sx_list2]
+        sy_list2[:] = [v * zoom_y + delta for v in sy_list2]
+
+        ex_list2[:] = [v * zoom_x + delta for v in ex_list2]
+        ey_list2[:] = [v * zoom_y + delta for v in ey_list2]
+
+        save_line_point_sx_l_list[:] = [v * zoom_x + delta for v in save_line_point_sx_l_list]
+        save_line_point_sy_l_list[:] = [v * zoom_y + delta for v in save_line_point_sy_l_list]
+
+        save_line_point_ex_l_list[:] = [v * zoom_x + delta for v in save_line_point_ex_l_list]
+        save_line_point_ey_l_list[:] = [v * zoom_y + delta for v in save_line_point_ey_l_list]
+
+        # cv.imshow("xiamian", img)
+        save_line_point_sx_r_list[:] = [v * zoom_x + delta for v in save_line_point_sx_r_list]
+        save_line_point_sy_r_list[:] = [v * zoom_y + delta for v in save_line_point_sy_r_list]
+
+        save_line_point_ex_r_list[:] = [v * zoom_x + delta for v in save_line_point_ex_r_list]
+        save_line_point_ey_r_list[:] = [v * zoom_y + delta for v in save_line_point_ey_r_list]
+
+        save_intersection_xl[:] = [v * zoom_x + delta for v in save_intersection_xl]
+        save_intersection_yl[:] = [v * zoom_y + delta for v in save_intersection_yl]
+
+        save_intersection_xr[:] = [v * zoom_x + delta for v in save_intersection_xr]
+        save_intersection_yr[:] = [v * zoom_y + delta for v in save_intersection_yr]
+
+        """画线"""
+        # 中线
+        for i in range(len(sx_list2)):
+            cv.line(img, (int(sx_list2[i]), int(sy_list2[i])), (int(ex_list2[i]), int(ey_list2[i])), (0, 255, 0), 1)
+        # cv.imshow("zhongxian", img)
+
+        """如果就交点存在"""
+        if save_intersection_xl != []:
+            # 下面偏移的线
+            # 地点到第一个交点
+            cv.line(img,
+                    (int(save_line_point_sx_l_list[0]), int(save_line_point_sy_l_list[0])),
+                    (int(save_intersection_xl[0]), int(save_intersection_yl[0])),
+                    (0, 0, 255),
+                    2)
+            # 交点之间的连线
+            for i in range(len(save_intersection_xl) - 1):
+                cv.line(img,
+                        (int(save_intersection_xl[i]), int(save_intersection_yl[i])),
+                        (int(save_intersection_xl[i+1]), int(save_intersection_yl[i+1])),
+                        (0, 0, 255),
+                        2)
+            # 交点到最后一个端点
+            cv.line(img,
+                    (int(save_intersection_xl[-1]), int(save_intersection_yl[-1])),
+                    (int(save_line_point_ex_l_list[-1]), int(save_line_point_ey_l_list[-1])),
+                    (0, 0, 255),
+                    2)
+
+            # 上面偏移的线
+            # 地点到第一个交点
+            cv.line(img,
+                    (int(save_line_point_sx_r_list[0]), int(save_line_point_sy_r_list[0])),
+                    (int(save_intersection_xr[0]), int(save_intersection_yr[0])),
+                    (0, 0, 255),
+                    2)
+            # 交点之间的连线
+            for i in range(len(save_intersection_xr) - 1):
+                cv.line(img,
+                        (int(save_intersection_xr[i]), int(save_intersection_yr[i])),
+                        (int(save_intersection_xr[i+1]), int(save_intersection_yr[i+1])),
+                        (0, 0, 255),
+                        2)
+            # 交点到最后一个端点
+            cv.line(img,
+                    (int(save_intersection_xr[-1]), int(save_intersection_yr[-1])),
+                    (int(save_line_point_ex_r_list[-1]), int(save_line_point_ey_r_list[-1])),
+                    (0, 0, 255),
+                    2)
+
+        """交点不存在"""
+        if save_intersection_xl == []:
+            # for i in range(len(save_line_point_sx_l_list)-1):
+            cv.line(img,
+                    (int(save_line_point_sx_l_list[0]), int(save_line_point_sy_l_list[0])),
+                    (int(save_line_point_ex_l_list[-1]), int(save_line_point_ey_l_list[-1])),
+                    (0, 0, 255),
+                    2)
+
+            cv.line(img,
+                    (int(save_line_point_sx_r_list[0]), int(save_line_point_sy_r_list[0])),
+                    (int(save_line_point_ex_r_list[-1]), int(save_line_point_ey_r_list[-1])),
+                    (0, 0, 255),
+                    2)
+
+            # 交点
+            # for i in range(len(save_intersection_xl)):
+            #     cv.circle(img, (int(save_intersection_xl[i]), int(save_intersection_yl[i])), 3, (255, 0, 0), -1)  # 上
+            #     cv.circle(img, (int(save_intersection_xr[i]), int(save_intersection_yr[i])), 3, (255, 0, 0), -1)
+
+        # 闭合首
+        cv.line(img,
+                (int(save_line_point_sx_l_list[0]), int(save_line_point_sy_l_list[0])),
+                (int(save_line_point_sx_r_list[0]), int(save_line_point_sy_r_list[0])),
+                (0, 0, 255),
+                2)
+
+        # 闭合尾
+        cv.line(img,
+                (int(save_line_point_ex_l_list[-1]), int(save_line_point_ey_l_list[-1])),
+                (int(save_line_point_ex_r_list[-1]), int(save_line_point_ey_r_list[-1])),
+                (0, 0, 255),
+                2)
 
         gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         ret, binary = cv.threshold(gray, 127, 255, cv.THRESH_BINARY)  # 转为二值图
         _, contours, hierarchy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+        # print(contours)
+
         # 画出轮廓线
-        # draw_img = img.copy()
-        # res = cv.drawContours(draw_img, contours, 1, (0, 0, 255), 2)
-        # cv.imshow('res', res)
+        draw_img = img.copy()
+        res = cv.drawContours(draw_img, contours, 1, (0, 255, 0), 2)
+        cv.imshow('res', res)
 
-        box = contours[1]
+        # show_img("l", img)
 
-        # currentPoint = (70, 50)
-        currentPoint = (int(currentPoint[0] - x_min + 50), int(currentPoint[1] - y_min + 50))
-        # print("currentPoint", currentPoint)
-        cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
+        # box = contours[1]
+        #
+        # currentPoint = (int((currentPoint[0] - x_min) * zoom_x + 5),
+        #                 int((currentPoint[1] - y_min) * zoom_y + 5))
+        #
+        # cv.circle(img, currentPoint, 5, [0, 0, 255], -1)
+        #
+        # # It returns positive (inside), negative (outside), or zero (on an edge)
+        # dist = cv.pointPolygonTest(box, currentPoint, False)
+        # # print("dist:", dist)
+        #
+        # BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯
+        # BorderReminderTextXY = (w - 320, h - 10)
+        # cv.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
+        # cv.putText(img, "BorderReminder", BorderReminderTextXY, cv.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
+        # self.BorderReminder.setText(" ")
 
-        # It returns positive (inside), negative (outside), or zero (on an edge)
-        dist = cv.pointPolygonTest(box, currentPoint, False)
-        # print("dist:", dist)
-
-        BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯
-        BorderReminderTextXY = (w - 320, h - 10)
-        cv.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
-        cv.putText(img, "BorderReminder", BorderReminderTextXY, cv.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
-        self.BorderReminder.setText(" ")
-
-        if dist == -1:
-            cv.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
-            self.BorderReminder.setText("！！即将超出边界！！")
+        # if dist == -1:
+        #     cv.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
+        #     self.BorderReminder.setText("！！即将超出边界！！")
 
         QtImgLine = QImage(cv.cvtColor(img, cv.COLOR_BGR2RGB).data,
                            img.shape[1],
@@ -298,7 +455,8 @@ class MyWindows(QWidget, UI.Ui_Form):
                         int(current_y),
                         )
 
-        self.showNowXY(current_x - x_min, current_y - y_min)
+        # self.showNowXY((current_x - x_min) * 5, (current_y - y_min) * 5)
+        self.showNowXY((current_x - x_min) * zoom_x + delta, (current_y - y_min) * zoom_x + delta)
         g_ui_threadLock.release()
 
 
