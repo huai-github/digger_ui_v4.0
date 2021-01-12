@@ -142,15 +142,6 @@ def thread_4g_func():
 			gl.set_value('g_end_h_list', eh_list)
 			gl.set_value('g_end_w_list', ew_list)
 
-			# dist_list = []
-			# for i in range(len(sx_list)):
-			# 	dist = sqrt(((sy_list[i] - ey_list[i]) ** 2) + ((sx_list[i] - ex_list[i]) ** 2))
-			# 	# print("dist", dist)
-			# 	dist_list.append(dist)
-			# 	# print("dist_list", dist_list)
-			# max_dist_list = max(dist_list)
-			# print("max_dist_list:", max_dist_list)
-			# gl.set_value("max_dist_list", max_dist_list)
 			"""任务接收完成标志"""
 			reced_flag = True
 			gl.set_value("reced_flag", reced_flag)
@@ -200,7 +191,7 @@ def thread_gyro_func():
 
 
 def thread_laser1_func():
-	LASER1_COM = "com33"
+	LASER1_COM = "com35"
 	laser1 = Laser(LASER1_COM)
 	while True:
 		g_laser1_threadLock.acquire()

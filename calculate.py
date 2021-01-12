@@ -5,6 +5,7 @@ import globalvar as gl
 
 g_calculate_threadLock = threading.Lock()
 
+
 def laser_dist_to_angle(adjacent_1, adjacent_2, laser_dist):
 	"""
 	通过激光传感器测得的距离计算角度
@@ -44,12 +45,12 @@ def altitude_calculate_func():
 			l_ag = 15.2
 			l_ad = 10.2
 			l_bc = 6.2 + dlt_bc
-			l_cg = 8.6
-			l_cd = 2.7
+			l_cg = 177.5
+			l_cd = 58.2
 			l_dg = 6
 			# l_de = 7.5 + dlt_de
 			l_de = 7.5000
-			l_eg = 2.5
+			l_eg = 49.3
 			l_eh = 7.1
 			l_fg = 2.2
 			l_fh = 5.7
