@@ -47,5 +47,6 @@ class TypeSwitchUnion(Union):
 		('float', c_float),
 		('short', c_short),
 		('char_2', c_char * 2),
+		('char_4', c_char * 4),
 		('char_8', c_char * 8)
 	]

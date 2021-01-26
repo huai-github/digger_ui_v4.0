@@ -62,7 +62,7 @@ class TimeInterval(object):
 
 
 def thread_gps_func():
-	GPS_COM = "com20"
+	GPS_COM = "com3"
 	GPS_REC_BUF_LEN = 138
 	values = []
 	while True:
@@ -74,8 +74,9 @@ def thread_gps_func():
 		gps_com.close_com()
 		g_gps_threadLock.acquire()  # 加锁
 		gps_data.gps_msg_analysis(gps_rec_buffer)
-		gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude = gps_data.gps_typeswitch()
-		# print("纬度：%s\t经度：%s\t海拔：%s\t" % (gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude))
+		gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude, gps_msg_switch.yaw = gps_data.gps_typeswitch()
+		print("纬度：%s\t经度：%s\t海拔：%s\t" % (gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude))
+		print("偏航角：", gps_msg_switch.yaw)
 		"""经纬度转高斯坐标"""
 		global g_x, g_y, g_h
 		g_x, g_y = LatLon2XY(gps_msg_switch.latitude, gps_msg_switch.longitude)
@@ -83,7 +84,7 @@ def thread_gps_func():
 		gl.set_value("gps_h", g_h)
 
 		# print("x:%s\ty:%s" % (g_x, g_y))
-		# print("g_h:", g_h)
+		print("g_h:", g_h)
 		"""判断挖完一次标志"""
 		values.append(g_h)
 		# print("values", values)
@@ -94,7 +95,7 @@ def thread_gps_func():
 			if diff >= 0:
 				if before_is_neg:
 					worked_flag = True
-					gl.set_value("worked_flag", worked_flag)
+					gl.set_value("worked_flag", worked_flag) # 挖完一次
 					g_h = values[i-1]
 					# print("g_h", g_h)
 					gl.set_value("gps_h", g_h)  # 计算h0使用
@@ -178,7 +179,7 @@ def thread_gyro_func():
 			gyro.roll = int(((RollH << 8) | RollL)) / 32768 * 180
 			gyro.pitch = int(((PitchH << 8) | PitchL)) / 32768 * 180
 
-			gyro.roll = round(gyro.roll, 2)
+			gyro.roll = round(gyro.roll, 2) # 保存2位小数
 			gyro.pitch = round(gyro.pitch, 2)
 
 			if gyro.roll is not None and gyro.pitch is not None:
@@ -191,36 +192,38 @@ def thread_gyro_func():
 
 
 def thread_laser1_func():
-	LASER1_COM = "com35"
+	LASER1_COM = "com37"
 	laser1 = Laser(LASER1_COM)
 	while True:
 		g_laser1_threadLock.acquire()
 		laser1_dist = laser1.get_distance()
 		if laser1_dist is not None:
 			gl.set_value("laser1_dist", laser1_dist)
-			# print("laser1_dist", laser1_dist)
+			print("laser1_dist", laser1_dist)
 		g_laser1_threadLock.release()
 
 
 def thread_laser2_func():
-	LASER2_COM = "com22"
+	LASER2_COM = "com38"
 	laser2 = Laser(LASER2_COM)
 	while True:
 		g_laser2_threadLock.acquire()
 		laser2_dist = laser2.get_distance()
 		if laser2_dist is not None:
 			gl.set_value("laser2_dist", laser2_dist)
+			print("laser2_dist", laser2_dist)
+
 		g_laser2_threadLock.release()
-		print("laser2_dist", laser2_dist)
 
 
 def thread_laser3_func():
-	LASER3_COM = "com33"
+	LASER3_COM = "com39"
 	laser3 = Laser(LASER3_COM)
 	while True:
 		g_laser3_threadLock.acquire()
 		laser3_dist = laser3.get_distance()
 		if laser3_dist is not None:
 			gl.set_value("laser3_dist", laser3_dist)
+			print("laser3_dist", laser3_dist)
+
 		g_laser3_threadLock.release()
-		print("laser3_dist", laser3_dist)

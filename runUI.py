@@ -153,7 +153,6 @@ class MyWindows(QWidget, UI.Ui_Form):
 		save_intersection_yr = []
 
 		"""求出所有点"""
-		# 判断k是否存在
 		for i in range(len(sx_list)):
 			line_point_s = np.array([sx_list[i], sy_list[i]])
 			line_point_e = np.array([ex_list[i], ey_list[i]])
@@ -209,12 +208,14 @@ class MyWindows(QWidget, UI.Ui_Form):
 		x_list = (sx_list + ex_list) \
 		         + (save_line_point_sx_l_list + save_line_point_sx_r_list + save_line_point_ex_l_list + save_line_point_ex_r_list) \
 		         + (save_intersection_xl + save_intersection_xr)
-		# x_list.append(currentPoint[0])
+		# 测试假数据画图时，注释掉
+		x_list.append(currentPoint[0])
 
 		y_list = (sy_list + ey_list) \
 		         + (save_line_point_sy_l_list + save_line_point_sy_r_list + save_line_point_ey_l_list + save_line_point_ey_r_list) \
 		         + (save_intersection_yl + save_intersection_yr)
-		# y_list.append(currentPoint[1])
+		# 测试假数据画图时，注释掉
+		y_list.append(currentPoint[1])
 
 		# 平移所有点
 		x_min = min(x_list)
@@ -304,7 +305,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 			if in_flag:
 				print("当前工作在第%d段" % (i + 1))
 			else:
-				print("！！超出工作区域！！")
+				# print("！！超出工作区域！！")
 				pass
 		"""画线"""
 		# 中线
@@ -495,7 +496,6 @@ class MyWindows(QWidget, UI.Ui_Form):
 		                int(current_y),
 		                )
 
-		# self.showNowXY((current_x - x_min) * 5, (current_y - y_min) * 5)
 		self.showNowXY((current_x - x_min) * zoom_x + delta, (current_y - y_min) * zoom_x + delta)
 		g_ui_threadLock.release()
 
@@ -513,11 +513,11 @@ if __name__ == "__main__":
 	calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=False)
 
 	gps_thread.start()  # 启动线程
-	_4g_thread.start()
+	# _4g_thread.start()
 	# gyro_thread.start()
 	# g_laser1_thread.start()
-	# # g_laser2_thread.start()
-	# # g_laser3_thread.start()
+	# g_laser2_thread.start()
+	# g_laser3_thread.start()
 	# sleep(1)
 	# calculate_thread.start()
 
