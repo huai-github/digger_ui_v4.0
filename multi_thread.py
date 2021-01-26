@@ -65,6 +65,7 @@ def thread_gps_func():
 	GPS_COM = "com3"
 	GPS_REC_BUF_LEN = 138
 	values = []
+	data_right_flag = None
 	while True:
 		gps_data = GPSINSData()
 		gps_msg_switch = LatLonAlt()
@@ -73,40 +74,50 @@ def thread_gps_func():
 		gps_com.rec_data(gps_rec_buffer, GPS_REC_BUF_LEN)  # int
 		gps_com.close_com()
 		g_gps_threadLock.acquire()  # 加锁
-		gps_data.gps_msg_analysis(gps_rec_buffer)
-		gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude, gps_msg_switch.yaw = gps_data.gps_typeswitch()
-		print("纬度：%s\t经度：%s\t海拔：%s\t" % (gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude))
-		print("偏航角：", gps_msg_switch.yaw)
-		"""经纬度转高斯坐标"""
-		global g_x, g_y, g_h
-		g_x, g_y = LatLon2XY(gps_msg_switch.latitude, gps_msg_switch.longitude)
-		g_h = gps_msg_switch.altitude
-		gl.set_value("gps_h", g_h)
+		data_right_flag = gps_data.gps_msg_analysis(gps_rec_buffer)
+		if data_right_flag:
+			gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude, \
+				gps_msg_switch.yaw,  gps_msg_switch.yaw_state = gps_data.gps_typeswitch()
+			print("纬度：%s\t经度：%s\t海拔：%s\t" % (gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude))
+			if gps_msg_switch.yaw_state == 0x50:  # 偏航角有固定解
+				pass
+				print("偏航角：", gps_msg_switch.yaw)
+				print("偏航角状态：", gps_msg_switch.yaw_state)
+			else:  # 偏航角有固定解
+				pass
+				print("偏航角未锁定\n")
 
-		# print("x:%s\ty:%s" % (g_x, g_y))
-		print("g_h:", g_h)
-		"""判断挖完一次标志"""
-		values.append(g_h)
-		# print("values", values)
-		before_is_neg = False
-		before_val = values[0]
-		for i in range(1, len(values)):
-			diff = values[i] - before_val
-			if diff >= 0:
-				if before_is_neg:
-					worked_flag = True
-					gl.set_value("worked_flag", worked_flag) # 挖完一次
-					g_h = values[i-1]
-					# print("g_h", g_h)
-					gl.set_value("gps_h", g_h)  # 计算h0使用
-					# print("***min***", values[i-1])
+			"""经纬度转高斯坐标"""
+			global g_x, g_y, g_h
+			g_x, g_y = LatLon2XY(gps_msg_switch.latitude, gps_msg_switch.longitude)
+			g_h = gps_msg_switch.altitude
+			gl.set_value("gps_h", g_h)
 
-				before_is_neg = False
-				before_val = values[i]
-				values = []
-			else:
-				before_is_neg = True
-				before_val = values[i]
+			print("x:%s\ty:%s" % (g_x, g_y))
+			# print("g_h:", g_h)
+
+			"""判断挖完一次标志"""
+			values.append(g_h)
+			# print("values", values)
+			before_is_neg = False
+			before_val = values[0]
+			for i in range(1, len(values)):
+				diff = values[i] - before_val
+				if diff >= 0:
+					if before_is_neg:
+						worked_flag = True
+						gl.set_value("worked_flag", worked_flag) # 挖完一次
+						g_h = values[i-1]
+						# print("g_h", g_h)
+						gl.set_value("gps_h", g_h)  # 计算h0使用
+						# print("***min***", values[i-1])
+
+					before_is_neg = False
+					before_val = values[i]
+					values = []
+				else:
+					before_is_neg = True
+					before_val = values[i]
 		g_gps_threadLock.release()  # 解锁
 
 

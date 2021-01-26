@@ -40,18 +40,19 @@ class LatLonAlt(object):
 		self.longitude = 0
 		self.altitude = 0
 		self.yaw = 0
+		self.yaw_state = 0
 
 
 class GPSINSData(object):
 	def __init__(self):
-		self.head = [b'\xaa', b'\x33']  # 2B deviation 0-2     b'3' == b'\x33'
+		self.head = [b'\xaa', b'\x33']  # 2B deviation 0-2
 		self.length = [b'\x00'] * 2  # 2B deviation 4-6
 		self.latitude = [b'\x00'] * 8  # 8B deviation 24
 		self.longitude = [b'\x00'] * 8  # 8B deviation 32
 		self.altitude = [b'\x00'] * 8  # 8B deviation 40
 		self.Angle_yaw = [b'\x00'] * 4
 		self.yaw_state = [b'\x00'] * 4
-		self.yaw_deviation = [b'\x00'] * 4
+		self.yaw_deviation = [b'\x00'] * 4  # 偏航角标准差
 
 		self.checksum = 0  # 2B deviation 136
 		self.xor_check = 0  # 定义异或校验返回值
@@ -78,22 +79,25 @@ class GPSINSData(object):
 			self.xor_check = self.xor_check.to_bytes(length=2, byteorder='little', signed=False)
 
 			if self.xor_check == self.checksum:  # 数据包异或校验通过
+				print("偏航角原始数据：", self.Angle_yaw)
 				if rec_buf[104] != 0x04:  # gps信号不稳定
 					print("The signal of gps is unstable！\r\n")
-			else:# 数据包异或校验不通过
+					return
+				else:  # gps信号稳定
+					return True
+			else:  # 数据包异或校验不通过
 				print("checksum error!!!\r\n")
-				pass
 				return
 		else:
 			print("gps data head error!!!\r\n")
-
-	# return
+			return
 
 	def gps_typeswitch(self):
 		gps_switch_lat = TypeSwitchUnion()
 		gps_switch_lon = TypeSwitchUnion()
 		gps_switch_alt = TypeSwitchUnion()
 		gps_switch_yaw = TypeSwitchUnion()
+		gps_switch_yaw_state = TypeSwitchUnion()
 		# 字符串拼接
 		latitude = self.latitude[0] + self.latitude[1] + self.latitude[2] + self.latitude[3] + self.latitude[4] + \
 		        self.latitude[5] + self.latitude[6] + self.latitude[7]
@@ -102,11 +106,13 @@ class GPSINSData(object):
 		altitude = self.altitude[0] + self.altitude[1] + self.altitude[2] + self.altitude[3] + self.altitude[4] + \
 		        self.altitude[5] + self.altitude[6] + self.altitude[7]
 
-		yaw = self.Angle_yaw[0] + self.Angle_yaw[1] + self.Angle_yaw[2]  + self.Angle_yaw[3]
+		yaw = self.Angle_yaw[0] + self.Angle_yaw[1] + self.Angle_yaw[2] + self.Angle_yaw[3]
+
+		yaw_state = self.yaw_state[0] + self.yaw_state[1] + self.yaw_state[2] + self.yaw_state[3]
 
 		gps_switch_lat.char_8 = latitude
 		gps_switch_lon.char_8 = longitude
 		gps_switch_alt.char_8 = altitude
 		gps_switch_yaw.char_4 = yaw
-
-		return gps_switch_lat.double, gps_switch_lon.double, gps_switch_alt.double, gps_switch_yaw.float
+		gps_switch_yaw_state.char_4 = yaw_state
+		return gps_switch_lat.double, gps_switch_lon.double, gps_switch_alt.double, gps_switch_yaw.float, gps_switch_yaw_state.float
