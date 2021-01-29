@@ -27,11 +27,3 @@ class Laser(object):
 					# print("distance: ", self.distance)
 				return self.distance
 
-
-# if __name__ == "__main__":
-# 	laser = Laser("com13")
-#
-# 	while True:
-# 		distance = laser.get_distance()
-# 		print("distance =", distance)
-

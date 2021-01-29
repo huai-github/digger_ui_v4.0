@@ -1,6 +1,6 @@
 from tools import *
 import math
-
+import globalvar as gl
 
 def LatLon2XY(latitude, longitude):
 	a = 6378137.0
@@ -65,32 +65,36 @@ class GPSINSData(object):
 			self.altitude = rec_buf[40:48]
 			# 偏航角
 			self.Angle_yaw = rec_buf[64:68]
-			# 偏航角状态
-			self.yaw_state = rec_buf[106:110]
-			# 偏航角标准差
-			self.yaw_deviation = rec_buf[110:114]
 
 			self.checksum = rec_buf[136:138]
-			self.checksum = self.checksum[0] + self.checksum[1]  # 将checksum 2字节合并
 
+			self.checksum = self.checksum[0] + self.checksum[1]  # 将checksum 2字节合并
 			for i in range(len(rec_buf) - 2):  # 计算校验值
 				rec_buf[i] = int.from_bytes(rec_buf[i], byteorder='little', signed=False)  # bytes转int
 				self.xor_check = self.xor_check ^ rec_buf[i]
 			self.xor_check = self.xor_check.to_bytes(length=2, byteorder='little', signed=False)
 
 			if self.xor_check == self.checksum:  # 数据包异或校验通过
-				print("偏航角原始数据：", self.Angle_yaw)
+				# print("偏航角原始数据：", self.Angle_yaw)
+				gps_stable_flag = False
 				if rec_buf[104] != 0x04:  # gps信号不稳定
 					print("The signal of gps is unstable！\r\n")
-					return
+					return False
 				else:  # gps信号稳定
-					return True
+					gps_stable_flag = True
+					gl.set_value("gps_stable_flag", gps_stable_flag)
+					"""偏航角是否稳定"""
+					if rec_buf[106] == 0x00 and rec_buf[107] == 0x00 and rec_buf[108] == 0x08 and rec_buf[109] == 0x42:
+						return True
+					else:
+						print("偏航角未锁定")
+						return False
 			else:  # 数据包异或校验不通过
 				print("checksum error!!!\r\n")
-				return
+				return False
 		else:
 			print("gps data head error!!!\r\n")
-			return
+			return False
 
 	def gps_typeswitch(self):
 		gps_switch_lat = TypeSwitchUnion()

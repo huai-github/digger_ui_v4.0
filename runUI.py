@@ -415,11 +415,17 @@ class MyWindows(QWidget, UI.Ui_Form):
 		BorderReminderTextXY = (w - 320, h - 10)
 		cv.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
 		cv.putText(img, "BorderReminder", BorderReminderTextXY, cv.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
+		"""是否超出边界"""
 		self.BorderReminder.setText(" ")
-
 		if dist == -1:
 			cv.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
 			self.BorderReminder.setText("！！！ 超出边界 ！！！")
+		"""GPS信号是否稳定"""
+		gps_stable_flag = gl.get_value("gps_stable_flag")
+		if gps_stable_flag:
+			self.GPSReminder.setText(" ")
+		else:
+			self.GPSReminder.setText("！！GPS信号不稳定！！")
 
 		QtImgLine = QImage(cv.cvtColor(img, cv.COLOR_BGR2RGB).data,
 		                   img.shape[1],
@@ -506,14 +512,14 @@ if __name__ == "__main__":
 
 	gps_thread = threading.Thread(target=multi_thread.thread_gps_func, daemon=False)
 	_4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=False)
-	gyro_thread = threading.Thread(target=multi_thread.thread_gyro_func, daemon=True)
-	g_laser1_thread = threading.Thread(target=multi_thread.thread_laser1_func, daemon=True)
-	g_laser2_thread = threading.Thread(target=multi_thread.thread_laser2_func, daemon=True)
-	g_laser3_thread = threading.Thread(target=multi_thread.thread_laser3_func, daemon=True)
-	calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=False)
+	# gyro_thread = threading.Thread(target=multi_thread.thread_gyro_func, daemon=True)
+	# g_laser1_thread = threading.Thread(target=multi_thread.thread_laser1_func, daemon=True)
+	# g_laser2_thread = threading.Thread(target=multi_thread.thread_laser2_func, daemon=True)
+	# g_laser3_thread = threading.Thread(target=multi_thread.thread_laser3_func, daemon=True)
+	# calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=False)
 
 	gps_thread.start()  # 启动线程
-	# _4g_thread.start()
+	_4g_thread.start()
 	# gyro_thread.start()
 	# g_laser1_thread.start()
 	# g_laser2_thread.start()

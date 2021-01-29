@@ -73,19 +73,15 @@ def thread_gps_func():
 		gps_com = SerialPortCommunication(GPS_COM, 115200, 0.2)  # 5Hz
 		gps_com.rec_data(gps_rec_buffer, GPS_REC_BUF_LEN)  # int
 		gps_com.close_com()
+
 		g_gps_threadLock.acquire()  # 加锁
+
 		data_right_flag = gps_data.gps_msg_analysis(gps_rec_buffer)
 		if data_right_flag:
 			gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude, \
 				gps_msg_switch.yaw,  gps_msg_switch.yaw_state = gps_data.gps_typeswitch()
 			print("纬度：%s\t经度：%s\t海拔：%s\t" % (gps_msg_switch.latitude, gps_msg_switch.longitude, gps_msg_switch.altitude))
-			if gps_msg_switch.yaw_state == 0x50:  # 偏航角有固定解
-				pass
-				print("偏航角：", gps_msg_switch.yaw)
-				print("偏航角状态：", gps_msg_switch.yaw_state)
-			else:  # 偏航角有固定解
-				pass
-				print("偏航角未锁定\n")
+			print("偏航角：", gps_msg_switch.yaw)
 
 			"""经纬度转高斯坐标"""
 			global g_x, g_y, g_h
@@ -106,7 +102,7 @@ def thread_gps_func():
 				if diff >= 0:
 					if before_is_neg:
 						worked_flag = True
-						gl.set_value("worked_flag", worked_flag) # 挖完一次
+						gl.set_value("worked_flag", worked_flag)  # 挖完一次
 						g_h = values[i-1]
 						# print("g_h", g_h)
 						gl.set_value("gps_h", g_h)  # 计算h0使用
@@ -118,11 +114,14 @@ def thread_gps_func():
 				else:
 					before_is_neg = True
 					before_val = values[i]
+		else:
+			print("数据错误\n")
+
 		g_gps_threadLock.release()  # 解锁
 
 
 def thread_4g_func():
-	COM_ID_4G = "com28"
+	COM_ID_4G = "com5"
 	rec = RecTasks()
 	heart = Heart(TYPE_HEART, diggerId)
 	com_4g = SerialPortCommunication(COM_ID_4G, 115200, 0.5)
