@@ -92,28 +92,6 @@ def thread_gps_func():
 			print("x:%s\ty:%s" % (g_x, g_y))
 			# print("g_h:", g_h)
 
-			"""判断挖完一次标志"""
-			values.append(g_h)
-			# print("values", values)
-			before_is_neg = False
-			before_val = values[0]
-			for i in range(1, len(values)):
-				diff = values[i] - before_val
-				if diff >= 0:
-					if before_is_neg:
-						worked_flag = True
-						gl.set_value("worked_flag", worked_flag)  # 挖完一次
-						g_h = values[i-1]
-						# print("g_h", g_h)
-						gl.set_value("gps_h", g_h)  # 计算h0使用
-						# print("***min***", values[i-1])
-
-					before_is_neg = False
-					before_val = values[i]
-					values = []
-				else:
-					before_is_neg = True
-					before_val = values[i]
 		else:
 			print("数据错误\n")
 
@@ -157,16 +135,16 @@ def thread_4g_func():
 			reced_flag = True
 			gl.set_value("reced_flag", reced_flag)
 
-		g_4g_threadLock.release()  # 解锁
-
 		# 发送
 		if worked_flag:
-			# print("send g_h", g_h)
-			send = SendMessage(TYPE_HEART, diggerId, round(g_x, 3), round(g_y, 3), round(g_h, 3), 0)  # round(g_x, 3)保留3位小数
+			h_o_min = gl.get_value("h_o_min")
+			send = SendMessage(TYPE_HEART, diggerId, round(g_x, 3), round(g_y, 3), round(h_o_min, 3), 0)  # round(g_x, 3)保留3位小数
 			send_msg_json = send.switch_to_json()
 			com_4g.send_data(send_msg_json.encode('utf-8'))
 			worked_flag = False
 			gl.set_value("worked_flag", worked_flag)
+
+		g_4g_threadLock.release()  # 解锁
 
 
 def thread_gyro_func():
@@ -199,6 +177,35 @@ def thread_gyro_func():
 				# print("pitch:", gyro.pitch)
 
 			g_gyro_threadLock.release()
+
+
+def thread_gyro_3_func():
+	GYRO_COM = "com4"
+	gyro = Gyro()
+	GYRO_REC_BUF_LEN = (11 * 4)
+	com_gyro = SerialPortCommunication(GYRO_COM, 115200, 0.5)
+	while True:
+		g_gyro_threadLock.acquire()
+		gyro_rec_buf = com_gyro.read_size(GYRO_REC_BUF_LEN)
+		# print(gyro_rec_buf)
+		target_index = gyro_rec_buf.find(0x53)  # 角度输出
+		if target_index != (-1):
+			if gyro_rec_buf[target_index - 1] == 0x55:  # 数据头
+				data = gyro_rec_buf[(target_index - 1):(target_index + 10)]
+				gyro.roll = int(((data[3] << 8) | data[2])) / 32768 * 180
+				gyro.pitch = int(((data[5] << 8) | data[4])) / 32768 * 180
+				gyro.yaw = int(((data[7] << 8) | data[6])) / 32768 * 180
+				print("roll:", gyro.roll)
+				print("pitch:", gyro.pitch)
+				print("yaw:", gyro.yaw)
+				print("------------------------------------------")
+			else:
+				print("header 1 error")
+				return -1
+		else:
+			print("header 2 error")
+			return -1
+		g_gyro_threadLock.release()
 
 
 def thread_laser1_func():

@@ -3,6 +3,7 @@ from math import acos, cos, pi, sin
 import globalvar as gl
 
 g_calculate_threadLock = threading.Lock()
+h_o_min = 0
 
 
 # def deep(dlt_bc, dlt_de, dlt_fi):
@@ -105,20 +106,45 @@ def deep(da_bi, xiao_bi, dou):
 
 
 def altitude_calculate_func():
+	global h_o_min
 	while True:
 		g_calculate_threadLock.acquire()
 
-		# 各点的高程, h表示高程，g表示对应的点
-		# h_g = gl.get_value("gps_h")
+		h_g = gl.get_value("gps_h")  # gps高程
 		# print("h_g", h_g)
 
 		dlt_bc = gl.get_value("laser1_dist")
 		dlt_de = gl.get_value("laser2_dist")
 		dlt_fi = gl.get_value("laser3_dist")
-		a_ab = gl.get_value("pitch")  # roll
+		a_ab = gl.get_value("pitch")
 
 		h_o = deep(144.5, 214.2, 152.7)
-		gl.set_value("h_o", h_o)
-		print("h_o", h_o)
+
+		"""判断挖完一次标志"""
+		values.append(h_o)
+		# values.append(g_h)
+		# print("values", values)
+		before_is_neg = False
+		before_val = values[0]
+		for i in range(1, len(values)):
+			diff = values[i] - before_val
+			if diff >= 0:
+				if before_is_neg:
+					worked_flag = True
+					gl.set_value("worked_flag", worked_flag)  # 挖完一次
+					h_o_min = values[i-1]
+					# print("g_h", g_h)
+					gl.set_value("h_o_min", h_o_min)  # 计算h0使用
+					# print("***min***", values[i-1])
+
+				before_is_neg = False
+				before_val = values[i]
+				values = []
+			else:
+				before_is_neg = True
+				before_val = values[i]
+
+		gl.set_value("h_o_min", h_o_min)
+		print("h_o_min", h_o_min)
 
 		g_calculate_threadLock.release()

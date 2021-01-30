@@ -70,7 +70,6 @@ def show_img(name, img, delay=0):
 		exit(0)
 
 
-# 判断特殊矩形：矩形的边平行于坐标轴
 def isInParRect(x1, y1, x4, y4, x, y):
 	# （x1，y1）为最左的点、（x2，y2）为最上的点、（x3，y3）为最下的点、（x4， y4）为最右的点
 	# 按顺时针点的位置依次为1，2，4，3
@@ -85,6 +84,7 @@ def isInParRect(x1, y1, x4, y4, x, y):
 	return True
 
 
+# 判断特殊矩形：矩形的边平行于坐标轴
 def isInRect(x1, y1, x2, y2, x3, y3, x4, y4, x, y):
 	# 使一般矩形旋转，使之平行于坐标轴
 	# （x1，y1）为最左的点、（x2，y2）为最上的点、（x3，y3）为最下的点、（x4， y4）为最右的点
@@ -294,6 +294,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 		save_intersection_yr[:] = [v * zoom_y + delta for v in save_intersection_yr]
 
 		"""判断点的位置"""
+		# 每一个直线段偏移出4个点，将这是个点围城一个四边形作为工作区域
 		for i in range(len(sx_list)):
 			in_flag = isInRect(
 				save_line_point_sx_r_list[i], save_line_point_sy_r_list[i],
@@ -420,6 +421,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 		if dist == -1:
 			cv.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
 			self.BorderReminder.setText("！！！ 超出边界 ！！！")
+
 		"""GPS信号是否稳定"""
 		gps_stable_flag = gl.get_value("gps_stable_flag")
 		if gps_stable_flag:
@@ -511,29 +513,31 @@ if __name__ == "__main__":
 	app = QApplication(sys.argv)
 
 	gps_thread = threading.Thread(target=multi_thread.thread_gps_func, daemon=False)
-	_4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=False)
+	# _4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=False)
 	# gyro_thread = threading.Thread(target=multi_thread.thread_gyro_func, daemon=True)
+	gyro_3_thread = threading.Thread(target=multi_thread.thread_gyro_3_func, daemon=False)
 	# g_laser1_thread = threading.Thread(target=multi_thread.thread_laser1_func, daemon=True)
 	# g_laser2_thread = threading.Thread(target=multi_thread.thread_laser2_func, daemon=True)
 	# g_laser3_thread = threading.Thread(target=multi_thread.thread_laser3_func, daemon=True)
 	# calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=False)
 
-	gps_thread.start()  # 启动线程
-	_4g_thread.start()
+	# gps_thread.start()  # 启动线程
+	# _4g_thread.start()
 	# gyro_thread.start()
+	gyro_3_thread.start()
 	# g_laser1_thread.start()
 	# g_laser2_thread.start()
 	# g_laser3_thread.start()
 	# sleep(1)
 	# calculate_thread.start()
 
-	mainWindow = MyWindows()
-
-	while True:
-		reced_flag = gl.get_value("reced_flag")
-		if reced_flag:
-			reced_flag = False
-			gl.set_value("reced_flag", reced_flag)
-			mainWindow = MyWindows()
-			mainWindow.show()
-			sys.exit(app.exec_())
+	# mainWindow = MyWindows()
+	#
+	# while True:
+	# 	reced_flag = gl.get_value("reced_flag")
+	# 	if reced_flag:
+	# 		reced_flag = False
+	# 		gl.set_value("reced_flag", reced_flag)
+	# 		mainWindow = MyWindows()
+	# 		mainWindow.show()
+	# 		sys.exit(app.exec_())
