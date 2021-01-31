@@ -58,8 +58,8 @@
   <widget class="QLabel" name="startcoordinate_3">
    <property name="geometry">
     <rect>
-     <x>230</x>
-     <y>690</y>
+     <x>510</x>
+     <y>680</y>
      <width>160</width>
      <height>52</height>
     </rect>
@@ -71,94 +71,11 @@
     <string>GPS信号</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="GPSReminder">
-   <property name="geometry">
-    <rect>
-     <x>400</x>
-     <y>690</y>
-     <width>375</width>
-     <height>58</height>
-    </rect>
-   </property>
-   <property name="palette">
-    <palette>
-     <active>
-      <colorrole role="Text">
-       <brush brushstyle="SolidPattern">
-        <color alpha="255">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-      <colorrole role="PlaceholderText">
-       <brush brushstyle="NoBrush">
-        <color alpha="128">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-     </active>
-     <inactive>
-      <colorrole role="Text">
-       <brush brushstyle="SolidPattern">
-        <color alpha="255">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-      <colorrole role="PlaceholderText">
-       <brush brushstyle="NoBrush">
-        <color alpha="128">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-     </inactive>
-     <disabled>
-      <colorrole role="Text">
-       <brush brushstyle="SolidPattern">
-        <color alpha="255">
-         <red>120</red>
-         <green>120</green>
-         <blue>120</blue>
-        </color>
-       </brush>
-      </colorrole>
-      <colorrole role="PlaceholderText">
-       <brush brushstyle="NoBrush">
-        <color alpha="128">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-     </disabled>
-    </palette>
-   </property>
-   <property name="cursor">
-    <cursorShape>BlankCursor</cursorShape>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 24pt &quot;微软雅黑&quot;;</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignCenter</set>
-   </property>
-  </widget>
   <widget class="QLabel" name="startcoordinate_2">
    <property name="geometry">
     <rect>
-     <x>232</x>
-     <y>622</y>
+     <x>512</x>
+     <y>612</y>
      <width>160</width>
      <height>52</height>
     </rect>
@@ -170,175 +87,105 @@
     <string>边界提示</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="BorderReminder">
-   <property name="geometry">
-    <rect>
-     <x>400</x>
-     <y>620</y>
-     <width>375</width>
-     <height>58</height>
-    </rect>
-   </property>
-   <property name="palette">
-    <palette>
-     <active>
-      <colorrole role="Text">
-       <brush brushstyle="SolidPattern">
-        <color alpha="255">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-      <colorrole role="PlaceholderText">
-       <brush brushstyle="NoBrush">
-        <color alpha="128">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-     </active>
-     <inactive>
-      <colorrole role="Text">
-       <brush brushstyle="SolidPattern">
-        <color alpha="255">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-      <colorrole role="PlaceholderText">
-       <brush brushstyle="NoBrush">
-        <color alpha="128">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-     </inactive>
-     <disabled>
-      <colorrole role="Text">
-       <brush brushstyle="SolidPattern">
-        <color alpha="255">
-         <red>120</red>
-         <green>120</green>
-         <blue>120</blue>
-        </color>
-       </brush>
-      </colorrole>
-      <colorrole role="PlaceholderText">
-       <brush brushstyle="NoBrush">
-        <color alpha="128">
-         <red>255</red>
-         <green>0</green>
-         <blue>0</blue>
-        </color>
-       </brush>
-      </colorrole>
-     </disabled>
-    </palette>
-   </property>
-   <property name="cursor">
-    <cursorShape>BlankCursor</cursorShape>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 24pt &quot;微软雅黑&quot;;</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignCenter</set>
-   </property>
-  </widget>
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
      <x>12</x>
      <y>622</y>
-     <width>213</width>
+     <width>421</width>
      <height>113</height>
     </rect>
    </property>
    <property name="title">
     <string/>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QLabel" name="startcoordinate">
-        <property name="styleSheet">
-         <string notr="true">font: 25 9pt &quot;微软雅黑 Light&quot;;</string>
-        </property>
-        <property name="text">
-         <string>起点坐标</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="startXY">
-        <property name="cursor">
-         <cursorShape>BlankCursor</cursorShape>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
-       <widget class="QLabel" name="endcoordinate">
-        <property name="styleSheet">
-         <string notr="true">font: 25 9pt &quot;微软雅黑 Light&quot;;</string>
-        </property>
-        <property name="text">
-         <string>终点坐标</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="endXY">
-        <property name="cursor">
-         <cursorShape>BlankCursor</cursorShape>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_4">
-      <item>
-       <widget class="QLabel" name="nowcoordinate">
-        <property name="styleSheet">
-         <string notr="true">font: 25 9pt &quot;微软雅黑 Light&quot;;</string>
-        </property>
-        <property name="text">
-         <string>当前坐标</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="nowXY">
-        <property name="cursor">
-         <cursorShape>BlankCursor</cursorShape>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-   </layout>
+   <widget class="QLabel" name="startcoordinate">
+    <property name="geometry">
+     <rect>
+      <x>13</x>
+      <y>13</y>
+      <width>60</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 25 9pt &quot;微软雅黑 Light&quot;;</string>
+    </property>
+    <property name="text">
+     <string>起点坐标</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="startXY">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>13</y>
+      <width>241</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string> </string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="endcoordinate">
+    <property name="geometry">
+     <rect>
+      <x>13</x>
+      <y>45</y>
+      <width>60</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 25 9pt &quot;微软雅黑 Light&quot;;</string>
+    </property>
+    <property name="text">
+     <string>终点坐标</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="endXY">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>45</y>
+      <width>241</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string> </string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="nowXY">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>80</y>
+      <width>241</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string> </string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="nowcoordinate">
+    <property name="geometry">
+     <rect>
+      <x>13</x>
+      <y>77</y>
+      <width>60</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 25 9pt &quot;微软雅黑 Light&quot;;</string>
+    </property>
+    <property name="text">
+     <string>当前坐标</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

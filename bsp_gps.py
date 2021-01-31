@@ -79,6 +79,7 @@ class GPSINSData(object):
 				gps_stable_flag = False
 				if rec_buf[104] != 0x04:  # gps信号不稳定
 					print("The signal of gps is unstable！\r\n")
+					gl.set_value("gps_stable_flag", gps_stable_flag)
 					return False
 				else:  # gps信号稳定
 					gps_stable_flag = True

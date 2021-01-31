@@ -1,19 +1,23 @@
 import sys
 from math import sqrt
+from random import random
+
 import UI
 import cv2 as cv
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import QWidget, QApplication
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QBrush
 from PyQt5 import QtCore
-from time import sleep
+from PyQt5.QtCore import Qt, QObject, pyqtSignal
+from time import sleep, time
 
 import calculate
 import multi_thread
 from my_thread import MyThread
 from multi_thread import *
 import globalvar as gl
+import random
 
 g_ui_threadLock = threading.Lock()
 
@@ -42,19 +46,20 @@ class UIFreshThread(object):  # 界面刷新线程
 	def __call__(self):  # 调用实例本身 ——>> MyThread(self.__thread,....
 		self.nowX = multi_thread.g_x  # from gps
 		self.nowY = multi_thread.g_y
-		h_o = gl.get_value("h_o")
+		h_o_min = gl.get_value("h_o_min")
 		# base_h = gl.get_value("base_h")
 		g_start_h_list = gl.get_value("g_start_h_list")
 
 		# print("h_o-2", h_o)
 		# print("base_h", base_h)
 		# print("g_start_h_list", g_start_h_list[0])
-		if h_o is not None and g_start_h_list is not None:
+		if h_o_min is not None and g_start_h_list is not None:
 			# self.deep = h_o - g_start_h_list[0]
-			self.deep = h_o
-			# self.deep = h_o - base_h
+			self.deep = h_o_min
 
-		# print("deep:%s\n" % self.deep)
+	# self.deep = h_o - base_h
+
+	# print("deep:%s\n" % self.deep)
 
 	def get_msg_deep(self):
 		return self.deep
@@ -104,6 +109,22 @@ def isInRect(x1, y1, x2, y2, x3, y3, x4, y4, x, y):
 	return isInParRect(x1, y1, x4, y4, x, y)
 
 
+def gps_warning_led(qp, color):
+	qp.setPen(color)
+	brush = QBrush(Qt.SolidPattern)
+	qp.setBrush(brush)
+	qp.setBrush(color)
+	qp.drawEllipse(680, 680, 50, 50)
+
+
+def border_warning_led(qp, color):
+	qp.setPen(color)
+	brush = QBrush(Qt.SolidPattern)
+	qp.setBrush(brush)
+	qp.setBrush(color)
+	qp.drawEllipse(680, 610, 50, 50)
+
+
 class MyWindows(QWidget, UI.Ui_Form):
 	def __init__(self):
 		super().__init__()
@@ -122,7 +143,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 		self.NumList = [0, 0, 0, 0, 0]
 
 	def set_slot(self):
-		self.__timer.timeout.connect(self.update)
+		self.__timer.timeout.connect(self.update_ui)
 
 	def leftWindow(self, img, sx_list, sy_list, ex_list, ey_list, s_width, e_width, nowX, nowY):
 		img[...] = 255  # 画布
@@ -205,16 +226,14 @@ class MyWindows(QWidget, UI.Ui_Form):
 			save_line_point_ey_r_list.append(line_point_e_r[1])
 
 		# 所有点 = 中线坐标 + 平移出的坐标 + 交点坐标
-		x_list = (sx_list + ex_list) \
-		         + (save_line_point_sx_l_list + save_line_point_sx_r_list + save_line_point_ex_l_list + save_line_point_ex_r_list) \
-		         + (save_intersection_xl + save_intersection_xr)
-		# 测试假数据画图时，注释掉
+		x_list = (sx_list + ex_list) + \
+		         (save_line_point_sx_l_list + save_line_point_sx_r_list + save_line_point_ex_l_list + save_line_point_ex_r_list) + \
+		         (save_intersection_xl + save_intersection_xr)
 		x_list.append(currentPoint[0])
 
-		y_list = (sy_list + ey_list) \
-		         + (save_line_point_sy_l_list + save_line_point_sy_r_list + save_line_point_ey_l_list + save_line_point_ey_r_list) \
-		         + (save_intersection_yl + save_intersection_yr)
-		# 测试假数据画图时，注释掉
+		y_list = (sy_list + ey_list) + \
+		         (save_line_point_sy_l_list + save_line_point_sy_r_list + save_line_point_ey_l_list + save_line_point_ey_r_list) + \
+		         (save_intersection_yl + save_intersection_yr)
 		y_list.append(currentPoint[1])
 
 		# 平移所有点
@@ -411,23 +430,7 @@ class MyWindows(QWidget, UI.Ui_Form):
 		# It returns positive (inside), negative (outside), or zero (on an edge)
 		dist = cv.pointPolygonTest(contours[1], currentPoint_zoom, False)
 		# print("dist:", dist)
-
-		BorderReminderLedXY = (w - 25, h - 18)  # 边界指示灯
-		BorderReminderTextXY = (w - 320, h - 10)
-		cv.circle(img, BorderReminderLedXY, 12, (0, 255, 0), -1)
-		cv.putText(img, "BorderReminder", BorderReminderTextXY, cv.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0), 2)
-		"""是否超出边界"""
-		self.BorderReminder.setText(" ")
-		if dist == -1:
-			cv.circle(img, BorderReminderLedXY, 12, (0, 0, 255), -1)  # 边界报警指示灯
-			self.BorderReminder.setText("！！！ 超出边界 ！！！")
-
-		"""GPS信号是否稳定"""
-		gps_stable_flag = gl.get_value("gps_stable_flag")
-		if gps_stable_flag:
-			self.GPSReminder.setText(" ")
-		else:
-			self.GPSReminder.setText("！！GPS信号不稳定！！")
+		gl.set_value("dist", dist)
 
 		QtImgLine = QImage(cv.cvtColor(img, cv.COLOR_BGR2RGB).data,
 		                   img.shape[1],
@@ -480,7 +483,35 @@ class MyWindows(QWidget, UI.Ui_Form):
 	def showNowXY(self, nowX, nowY):
 		self.nowXY.setText("(%.3f, %.3f)" % (nowX, nowY))
 
-	def update(self):
+	def paintEvent(self, e):
+		qp = QPainter()
+		qp.begin(self)
+		"""GPS信号指示灯"""
+		gps_stable_flag = gl.get_value("gps_stable_flag")
+		if gps_stable_flag is not None:
+			if gps_stable_flag:
+				gps_warning_led(qp, Qt.green)
+
+			elif not gps_stable_flag:
+				gps_warning_led(qp, Qt.red)
+			else:
+				gps_warning_led(qp, Qt.yellow)
+
+			"""边界信号指示灯"""
+			dist = gl.get_value("dist")
+			if dist is not None:
+				if dist == -1:
+					border_warning_led(qp, Qt.red)
+				elif dist == 1 or dist == 0:
+					border_warning_led(qp, Qt.green)
+				else:
+					border_warning_led(qp, Qt.yellow)
+		qp.end()
+		# 刷新
+		self.setUpdatesEnabled(True)
+		self.update()
+
+	def update_ui(self):
 		g_ui_threadLock.acquire()
 		global x_min, y_min
 		worked_flag = gl.get_value("worked_flag")
@@ -495,8 +526,10 @@ class MyWindows(QWidget, UI.Ui_Form):
 		g_end_h_list = gl.get_value('g_end_h_list')
 		g_end_w_list = gl.get_value('g_end_w_list')
 		# print('g_end_w_list:', g_end_w_list)
-
-		current_x, current_y = self.__thread.get_msg_nowXY()
+		# TODO:测试数据
+		# current_x, current_y = self.__thread.get_msg_nowXY()
+		current_x = random.randint(1, 300)
+		current_y = random.randint(1, 300)
 		self.leftWindow(self.imgLine, g_start_x_list, g_start_y_list, g_end_x_list, g_end_y_list,
 		                g_start_w_list,
 		                g_end_w_list,
@@ -513,31 +546,31 @@ if __name__ == "__main__":
 	app = QApplication(sys.argv)
 
 	gps_thread = threading.Thread(target=multi_thread.thread_gps_func, daemon=False)
-	# _4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=False)
+	_4g_thread = threading.Thread(target=multi_thread.thread_4g_func, daemon=False)
 	# gyro_thread = threading.Thread(target=multi_thread.thread_gyro_func, daemon=True)
-	gyro_3_thread = threading.Thread(target=multi_thread.thread_gyro_3_func, daemon=False)
+	# gyro_3_thread = threading.Thread(target=multi_thread.thread_gyro_3_func, daemon=False)
 	# g_laser1_thread = threading.Thread(target=multi_thread.thread_laser1_func, daemon=True)
 	# g_laser2_thread = threading.Thread(target=multi_thread.thread_laser2_func, daemon=True)
 	# g_laser3_thread = threading.Thread(target=multi_thread.thread_laser3_func, daemon=True)
 	# calculate_thread = threading.Thread(target=calculate.altitude_calculate_func, daemon=False)
 
-	# gps_thread.start()  # 启动线程
-	# _4g_thread.start()
+	gps_thread.start()  # 启动线程
 	# gyro_thread.start()
-	gyro_3_thread.start()
+	# gyro_3_thread.start()
 	# g_laser1_thread.start()
 	# g_laser2_thread.start()
 	# g_laser3_thread.start()
 	# sleep(1)
 	# calculate_thread.start()
+	_4g_thread.start()
 
-	# mainWindow = MyWindows()
-	#
-	# while True:
-	# 	reced_flag = gl.get_value("reced_flag")
-	# 	if reced_flag:
-	# 		reced_flag = False
-	# 		gl.set_value("reced_flag", reced_flag)
-	# 		mainWindow = MyWindows()
-	# 		mainWindow.show()
-	# 		sys.exit(app.exec_())
+	mainWindow = MyWindows()
+
+	while True:
+		reced_flag = gl.get_value("reced_flag")
+		if reced_flag:
+			reced_flag = False
+			gl.set_value("reced_flag", reced_flag)
+			mainWindow = MyWindows()
+			mainWindow.show()
+			sys.exit(app.exec_())
